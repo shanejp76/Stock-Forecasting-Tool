@@ -1,0 +1,237 @@
+tuning notes:
+
+-- AAPL --
+
+model performance w/o any tuning
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	23.36232	0.127624	789.160063	28.091993
+
+w grid search
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	18.107178	0.094521	424.249988	20.59733
+
+cross validation
+  horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  175.870018  13.261599  4.883271  0.287427  0.226379  0.294732   
+1 38 days  176.675905  13.291949  4.893867  0.289486  0.228165  0.296422   
+2 39 days  177.623410  13.327543  4.915085  0.291502  0.230270  0.298392   
+3 40 days  178.855850  13.373700  4.938727  0.293337  0.231257  0.300117   
+4 41 days  179.664126  13.403885  4.949111  0.293811  0.233416  0.300898   
+
+   coverage  
+0  0.212397  
+1  0.210736  
+2  0.207407  
+3  0.206777  
+4  0.207349  
+
+w tuning
+{'seasonality_mode': 'additive',
+ 'changepoint_prior_scale': 0.5,
+ 'seasonality_prior_scale': 10}
+
+   horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  170.964524  13.075340  4.821755  0.271364  0.213982  0.279819   
+1 38 days  171.731248  13.104627  4.831527  0.272962  0.216199  0.281029   
+2 39 days  172.657919  13.139936  4.851492  0.274542  0.217570  0.282500   
+3 40 days  173.836539  13.184709  4.873777  0.276175  0.218853  0.283937   
+4 41 days  174.619790  13.214378  4.883741  0.276587  0.221062  0.284513   
+
+   coverage  
+0  0.225460  
+1  0.226600  
+2  0.226950  
+3  0.227738  
+4  0.229571  
+
+
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	23.686319	0.129413	809.412621	28.450178
+
+-- VONE --
+
+model performance w/o any tuning
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	33.549731	0.156766	1447.673684	38.048307
+
+w grid search
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	21.244074	0.100732	687.743143	26.224857
+
+cross validation
+  horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  177.357845  13.317577  8.840500  0.058134  0.049549  0.057947   
+1 38 days  174.289596  13.201878  8.754452  0.057457  0.048750  0.057322   
+2 39 days  173.859007  13.185561  8.740685  0.057152  0.048225  0.057077   
+3 40 days  175.997128  13.266391  8.809395  0.057404  0.047492  0.057354   
+4 41 days  176.986914  13.303643  8.865905  0.057687  0.048750  0.057679   
+
+   coverage  
+0  0.290225  
+1  0.297347  
+2  0.300049  
+3  0.294010  
+4  0.292184  
+
+w tuning
+{'seasonality_mode': 'additive',
+ 'changepoint_prior_scale': 0.001,
+ 'seasonality_prior_scale': 10}
+
+  horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  153.812651  12.402123  8.996751  0.067561  0.051768  0.068485   
+1 38 days  152.102632  12.332990  8.916719  0.066926  0.050999  0.067896   
+2 39 days  149.377759  12.222019  8.825585  0.066265  0.051091  0.067274   
+3 40 days  148.137264  12.171165  8.778637  0.065890  0.051091  0.066932   
+4 41 days  147.067294  12.127130  8.754618  0.065911  0.050382  0.066968   
+
+   coverage  
+0  0.454369  
+1  0.459746  
+2  0.462679  
+3  0.465939  
+4  0.464686  
+
+
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	21.353262	0.101232	694.913721	26.361216
+
+
+-- AMZN --
+
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	18.480383	0.120119	565.859866	23.787809
+
+w grid search
+    Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	18.483933	0.119554	558.441067	23.631358
+
+  horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  263.293594  16.226324  7.190506  0.199078  0.139682  0.210721   
+1 38 days  259.061601  16.095391  7.138548  0.200527  0.141735  0.212941   
+2 39 days  259.435249  16.106994  7.177673  0.202530  0.141735  0.215490   
+3 40 days  256.734043  16.022922  7.181255  0.204468  0.141735  0.217535   
+4 41 days  255.749823  15.992180  7.187341  0.205816  0.141871  0.219207   
+
+   coverage  
+0  0.413080  
+1  0.410032  
+2  0.404085  
+3  0.399272  
+4  0.396077  
+
+w tuning
+
+{'seasonality_mode': 'additive',
+ 'changepoint_prior_scale': 0.001,
+ 'seasonality_prior_scale': 10}
+
+   horizon         mse       rmse       mae      mape     mdape     smape  \
+0 37 days  257.500067  16.046809  8.176648  0.454744  0.239802  0.337801   
+1 38 days  253.458012  15.920365  8.106434  0.453345  0.240126  0.337702   
+2 39 days  253.755167  15.929695  8.125072  0.452931  0.240971  0.337758   
+3 40 days  251.362664  15.854421  8.116406  0.454543  0.240530  0.337983   
+4 41 days  250.622226  15.831053  8.115813  0.452128  0.240530  0.337549   
+
+   coverage  
+0  0.421656  
+1  0.424176  
+2  0.424736  
+3  0.424727  
+4  0.423965  
+
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	21.453722	0.142976	736.407524	27.13683
+
+
+-- GME --
+
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	8.838203	0.569809	102.959738	10.146908
+
+w grid search
+Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	5.791086	0.374843	50.76323	7.124832
+
+  horizon        mse      rmse       mae      mape     mdape     smape  \
+0 37 days  65.295642  8.080572  3.318735  0.279118  0.148278  0.270902   
+1 38 days  65.110585  8.069113  3.314940  0.279319  0.148278  0.271177   
+2 39 days  65.409671  8.087625  3.333109  0.280754  0.148612  0.271314   
+3 40 days  65.350349  8.083956  3.337965  0.282222  0.149875  0.272664   
+4 41 days  65.156905  8.071983  3.338430  0.284889  0.151235  0.275376   
+
+   coverage  
+0  0.397338  
+1  0.396979  
+2  0.395732  
+3  0.390398  
+4  0.385063  
+
+w tuning
+{'seasonality_mode': 'additive',
+ 'changepoint_prior_scale': 0.001,
+ 'seasonality_prior_scale': 10}
+
+  horizon        mse      rmse       mae      mape     mdape     smape  \
+0 37 days  71.308033  8.444408  4.120828  0.738817  0.370116  0.486093   
+1 38 days  71.063048  8.429890  4.123113  0.742915  0.371557  0.487402   
+2 39 days  70.646083  8.405122  4.116414  0.745872  0.372384  0.487264   
+3 40 days  71.014593  8.427016  4.136224  0.742026  0.373284  0.486842   
+4 41 days  70.417822  8.391533  4.131239  0.744423  0.379022  0.487923   
+
+   coverage  
+0  0.392622  
+1  0.391714  
+2  0.393792  
+3  0.393340  
+4  0.389913  
+
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	6.014991	0.390088	54.304799	7.369179
+
+
+-- VZ --
+
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	4.405481	0.131001	33.502666	5.788149
+
+grid search
+    Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	4.153304	0.123785	30.814154	5.55105
+
+cross validation wo tuning
+  horizon       mse      rmse       mae      mape     mdape     smape  \
+0 37 days  8.429490  2.903358  1.806845  0.095193  0.075317  0.094365   
+1 38 days  8.526506  2.920018  1.814311  0.095650  0.075072  0.094865   
+2 39 days  8.644888  2.940219  1.824944  0.096103  0.075767  0.095341   
+3 40 days  8.730938  2.954816  1.835626  0.096783  0.075961  0.095978   
+4 41 days  8.803270  2.967030  1.842176  0.097136  0.076523  0.096291   
+
+   coverage  
+0  0.356008  
+1  0.355157  
+2  0.351970  
+3  0.348644  
+4  0.348047 
+
+{'seasonality_mode': 'additive',
+ 'changepoint_prior_scale': 0.5,
+ 'seasonality_prior_scale': 10}
+
+w tuning
+   horizon       mse      rmse       mae      mape     mdape     smape  \
+0 37 days  8.361656  2.891653  1.792167  0.096319  0.076171  0.095560   
+1 38 days  8.459098  2.908453  1.799671  0.096851  0.076171  0.096124   
+2 39 days  8.576513  2.928568  1.810510  0.097381  0.076456  0.096673   
+3 40 days  8.661298  2.943008  1.821216  0.098064  0.077185  0.097321   
+4 41 days  8.734448  2.955410  1.828251  0.098561  0.078313  0.097789   
+
+   coverage  
+0  0.313340  
+1  0.311571  
+2  0.309514  
+3  0.307238  
+4  0.306295 
+
+	Mean Absolute Error	Mean Absolute Percentage Error	Mean Squared Error	Root Mean Squared Error
+0	4.207718	0.125353	31.403551	5.603887

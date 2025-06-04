@@ -1,0 +1,39 @@
+Design
+
+DONE
+- code -
+- have UI adjust winsorizer thresholds based on volatility. more volatile = 0.05, 0.95, less volatile = 0.15, 0.85.
+* Candlesticks. 
+    - Put forecast (for close) over the candlesticks. 
+    Does it make sense? Do the candlesticks significantly overlap the forecast boundaries?
+    Do I need to build more to include high, low, open into the forecast?
+# ask chat to add descriptions to each function.
+
+- app -
+* Make sure that visual includes OG closing data, not model. I want it to reflect the actual data.
+
+* note that training size is automatically adjusted based on the volatility of the stock. 
+    it will slow down processing times. you exchange accuracy for a longer wait time. 
+    the purpose is to improve the model.
+
+# use 'Next Steps' at the bottom of app for basis of description
+
+# make sure the entire app is formatted the same clean way
+
+* have accuracy score view show progress of metrics improvement. 
+    so on each iteration, reveal new changes. 
+    'Standard Model', 'Model with Winsorizer', 'Final Model with Hyperparameter Tuning'
+    * 'Current Metrics' for non-final models, 'Final Metrics' for teh final model
+
+* mention that grid search is cross validated across the dataset
+
+* cache model data?
+
+NEXT
+
+- app -
+
+function definitions
+
+AFTER CODE & APP ARE DONE
+* have program run thru AWS lambda free-tier. that way you can gain & showcase a little data engineering knowledge.

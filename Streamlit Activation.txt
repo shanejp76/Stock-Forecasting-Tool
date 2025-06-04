@@ -1,0 +1,30 @@
+-- Change directory --
+
+mac
+cd "/Users/shaneypeterson/Desktop/2024.06.27_-_Data_Science/2024.10.13 - Portfolio Projects/2024.12.04 - Swing Ticker"
+pc
+cd "C:\Users\Shane\Desktop\2024.06.27_-_Data_Science\2024.10.13 - Portfolio Projects\2024.12.04 - Swing Ticker"
+
+-- Activate venv --
+
+mac
+source "/Users/shaneypeterson/Desktop/2024.06.27_-_Data_Science/2024.10.13 - Portfolio Projects/2024.12.04 - Swing Ticker/venv/bin/activate"
+pc
+.\venv\Scripts\activate
+
+
+-- Run app --
+
+streamlit run main.py
+
+-- Streamlit documentation -- 
+
+https://docs.streamlit.io/develop/api-reference/configuration/config.toml
+
+-- Activate Venv in notebook
+
+0) Create requirements.txt (freeze)
+1) Enter venv
+2) pip install ipykernel
+3) python -m ipykernel install --user --name swing_ticker_kernel --display-name "Swing Ticker Kernel"
+4) Choose 
