@@ -107,7 +107,7 @@ with st.expander("-- Click here to expand --"):
         except Exception as e:
             st.error(f"Error loading data for {ticker}: {e}")
             st.info(
-                f"This often happens if you've hit API rate limits. Please try again in a minute."
+                f"This often happens if you've hit API rate limits. Please try again tomorrow."
             )
             return pd.DataFrame()
 
@@ -129,7 +129,7 @@ with st.expander("-- Click here to expand --"):
             st.stop()
     else:
         data_load_state.text(
-            f"-- '{selected_stock}' is not a valid Symbol. Please enter a symbol from the Ticker List in the Appendix below. --"
+            f"-- '{selected_stock}' is not a valid Symbol. Please refresh and enter a symbol from the Ticker List in the Appendix below. --"
         )
         st.stop()
 
