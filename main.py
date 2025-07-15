@@ -7,7 +7,7 @@ import requests
 from alpha_vantage.timeseries import TimeSeries
 
 # Import functions from our new modules from the 'app_modules' package
-from app_modules.data_handler import (  # Changed
+from app_modules.data_handler import (
     load_finnhub_tickers,
     load_alpha_vantage_data,
     process_stock_data,
@@ -19,8 +19,8 @@ from app_modules.model_trainer import (
     dynamic_winsorize,
     model_drafts,
     tune_and_train_final_model,
-)  # Changed
-from app_modules.plotter import plot_forecast  # Changed
+)
+from app_modules.plotter import plot_forecast
 from prophet.plot import plot_plotly
 from prophet.diagnostics import cross_validation, performance_metrics
 from prophet import Prophet
@@ -221,11 +221,15 @@ if not forecast.empty and not data.empty:
             "SMA50",
             "bb_upper",
             "bb_lower",
-            "SMA20",  # ADDED
-            "SMA100",  # ADDED
-            "SMA200",  # ADDED
-            "GoldenCross_Signal",  # ADDED
-            "DeathCross_Signal",  # ADDED
+            "SMA20",
+            "SMA100",
+            "SMA200",
+            "GoldenCross_Signal",
+            "DeathCross_Signal",
+            "RSI",  # ADDED
+            "MACD",  # ADDED
+            "MACD_Signal",  # ADDED
+            "MACD_Hist",  # ADDED
         ]
     ]
     forecast_df.rename(columns={"ds": "Date"}, inplace=True)

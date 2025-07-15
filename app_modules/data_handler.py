@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import requests
 from alpha_vantage.timeseries import TimeSeries
-import ta
+import ta  # This is already imported and will be used for MACD and RSI
 from datetime import date, timedelta
 
 
@@ -129,8 +129,7 @@ def calculate_stock_stats(data, selected_stock, price_col):
 
 def process_technical_indicators(data, price_col):
     """
-    Calculates technical indicators like SMA and Bollinger Bands.
-    Also calculates Golden Cross and Death Cross.
+    Calculates technical indicators like SMA, Bollinger Bands, RSI, and MACD.
     """
     if not data.empty and price_col in data.columns:
         # Existing SMA50 and Bollinger Bands
@@ -165,6 +164,23 @@ def process_technical_indicators(data, price_col):
         data["DeathCross_Signal"] = np.where(
             data["DeathCross"], data[price_col], np.nan
         )
+
+        # --- ADD NEW INDICATORS: RSI and MACD ---
+        # RSI (Relative Strength Index) - CORRECTED FUNCTION CALL
+        data["RSI"] = ta.momentum.rsi(
+            close=data[price_col], window=14
+        )  # Common window is 14 periods
+
+        # MACD (Moving Average Convergence Divergence)
+        macd = ta.trend.MACD(
+            close=data[price_col],
+            window_fast=12,  # Common fast window is 12 periods
+            window_slow=26,  # Common slow window is 26 periods
+            window_sign=9,  # Common signal window is 9 periods
+        )
+        data["MACD"] = macd.macd()
+        data["MACD_Signal"] = macd.macd_signal()
+        data["MACD_Hist"] = macd.macd_diff()  # MACD Histogram
 
     else:
         st.error(
