@@ -1,4 +1,3 @@
-# main.py
 import streamlit as st
 import pandas as pd
 import os
@@ -222,6 +221,11 @@ if not forecast.empty and not data.empty:
             "SMA50",
             "bb_upper",
             "bb_lower",
+            "SMA20",  # ADDED
+            "SMA100",  # ADDED
+            "SMA200",  # ADDED
+            "GoldenCross_Signal",  # ADDED
+            "DeathCross_Signal",  # ADDED
         ]
     ]
     forecast_df.rename(columns={"ds": "Date"}, inplace=True)

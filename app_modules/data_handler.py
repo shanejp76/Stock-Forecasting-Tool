@@ -130,14 +130,42 @@ def calculate_stock_stats(data, selected_stock, price_col):
 def process_technical_indicators(data, price_col):
     """
     Calculates technical indicators like SMA and Bollinger Bands.
+    Also calculates Golden Cross and Death Cross.
     """
     if not data.empty and price_col in data.columns:
+        # Existing SMA50 and Bollinger Bands
         data["SMA50"] = data[price_col].rolling(window=50).mean()
         indicator_bb = ta.volatility.BollingerBands(
             close=data[price_col], window=20, window_dev=2
         )
         data["bb_upper"] = indicator_bb.bollinger_hband()
         data["bb_lower"] = indicator_bb.bollinger_lband()
+
+        # Add other relevant SMAs
+        data["SMA20"] = data[price_col].rolling(window=20).mean()
+        data["SMA100"] = data[price_col].rolling(window=100).mean()
+        data["SMA200"] = data[price_col].rolling(window=200).mean()
+
+        # Calculate Golden Cross (SMA50 crosses above SMA200)
+        # Check if SMA50 was below SMA200 in the previous period and is above in the current period
+        data["GoldenCross"] = (data["SMA50"].shift(1) < data["SMA200"].shift(1)) & (
+            data["SMA50"] > data["SMA200"]
+        )
+        # Get the 'Adjusted Close' price at the point of the Golden Cross
+        data["GoldenCross_Signal"] = np.where(
+            data["GoldenCross"], data[price_col], np.nan
+        )
+
+        # Calculate Death Cross (SMA50 crosses below SMA200)
+        # Check if SMA50 was above SMA200 in the previous period and is below in the current period
+        data["DeathCross"] = (data["SMA50"].shift(1) > data["SMA200"].shift(1)) & (
+            data["SMA50"] < data["SMA200"]
+        )
+        # Get the 'Adjusted Close' price at the point of the Death Cross
+        data["DeathCross_Signal"] = np.where(
+            data["DeathCross"], data[price_col], np.nan
+        )
+
     else:
         st.error(
             "Cannot process indicators: 'Adjusted Close' column not found or data is empty."
