@@ -118,9 +118,34 @@ with st.expander("Click here to expand"):
         data, selected_stock, price_col
     )
 
+    # --- Displaying Stock Statistics in a single-line DataFrame ---
     if stats:
-        stats_window_df = pd.DataFrame([stats])
-        st.write(stats_window_df)
+        # Create a single-row DataFrame from the stats dictionary
+        stats_df_for_display = pd.DataFrame([stats])
+
+        # Define the desired order of columns
+        desired_column_order = [
+            "Symbol",
+            "Current Price",
+            "Daily % Change",
+            "YTD % Change",
+            "52-Week High",
+            "52-Week Low",
+            "Current Volume",
+            "Annualized Volatility",
+            "Average Daily Percentage Change",
+            "Last Data Date",
+            "Earliest Data Date",
+        ]
+
+        # Filter and reorder columns, dropping any that don't exist in the data (e.g., if API didn't return them)
+        existing_ordered_columns = [
+            col for col in desired_column_order if col in stats_df_for_display.columns
+        ]
+        stats_df_for_display = stats_df_for_display[existing_ordered_columns]
+
+        st.dataframe(stats_df_for_display, height=60, use_container_width=True)
+
     else:
         st.warning("Stock statistics are not available.")
 
@@ -226,10 +251,10 @@ if not forecast.empty and not data.empty:
             "SMA200",
             "GoldenCross_Signal",
             "DeathCross_Signal",
-            "RSI",  # ADDED
-            "MACD",  # ADDED
-            "MACD_Signal",  # ADDED
-            "MACD_Hist",  # ADDED
+            "RSI",
+            "MACD",
+            "MACD_Signal",
+            "MACD_Hist",
         ]
     ]
     forecast_df.rename(columns={"ds": "Date"}, inplace=True)
@@ -242,9 +267,7 @@ if len(scores_df) >= 3:
     scores_df.index = ["Baseline Model", "Winsorized Model", "Final Model"]
     scores_df = scores_df.reindex(sorted(scores_df.columns), axis=1)
 else:
-    st.warning(
-        "Not enough model scores to label all iterations. Displaying available scores."
-    )
+    st.warning("Not enough model scores for comparison. Displaying available scores.")
 
 # --- Calling plot_forecast ---
 plot_forecast(forecast_df, ticker_name, selected_stock)
@@ -312,7 +335,7 @@ with st.expander("Click here to expand"):
             "* Mean Squared Error (MSE) - this squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy."
         )
         st.write(
-            f"* Root Mean Squared Error (RMSE) -  The square root of MSE. It is in the same units as the original data, making it easier to interpret. The RMSE of {round(scores_df.loc['Final Model']['rmse'], 4)} suggests that the model's predictions can deviate from the actual values by up to ${round(scores_df.loc['Final Model']['rmse'], 2)} in some cases."
+            "* Root Mean Squared Error (RMSE) -  The square root of MSE. It is in the same units as the original data, making it easier to interpret. The RMSE of {round(scores_df.loc['Final Model']['rmse'], 4)} suggests that the model's predictions can deviate from the actual values by up to ${round(scores_df.loc['Final Model']['rmse'], 2)} in some cases."
         )
     else:
         st.write(
@@ -320,7 +343,7 @@ with st.expander("Click here to expand"):
         )
 
     st.write(
-        "Beyond statistical measures, these metrics translate directly into business impact. For instance, a lower Mean Absolute Error (MAE) signifies that, on average, our forecasts are closer to the actual stock price. This precision is critical as it directly reduces potential financial risk by providing more accurate price expectations. Similarly, the Root Mean Squared Error (RMSE) quantifies the typical magnitude of our prediction errors, which is invaluable for informing robust risk assessments and setting realistic expectations for portfolio management. The Symmetric Mean Absolute Percentage Error (SMAPE) further enhances this by providing a clear, percentage-based understanding of forecast accuracy, allowing for straightforward interpretation of how far off our predictions are, on average, from the actual values."
+        "Beyond statistical measures, these metrics translate directly into business impact. For instance, a lower Mean Absolute Error (MAE) signifies that, on average, our forecasts are closer to the actual stock price. This precision is critical as it directly reduces potential financial risk by providing more accurate price expectations. Similarly, the Root Mean Squared Error (RMSE) quantifies the typical magnitude of our prediction errors, which is invaluable for informing robust risk assessments and setting realistic expectations for portfolio management. The Symmetric Mean Absolute Percentage Error (SMAPE) further enhances this by providing a clear, percentage-based understanding of how far off our predictions are, on average, from the actual values."
     )
 
 ## About

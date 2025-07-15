@@ -96,6 +96,46 @@ def calculate_stock_stats(data, selected_stock, price_col):
         stats["Symbol"] = selected_stock
         stats["Current Price"] = round(data[price_col].iloc[-1], 2)
         stats["Current Volume"] = data["Volume"].iloc[-1]
+
+        # Daily Percentage Change
+        if len(data) > 1:
+            daily_change = (data[price_col].iloc[-1] - data[price_col].iloc[-2]) / data[
+                price_col
+            ].iloc[-2]
+            stats["Daily % Change"] = f"{daily_change * 100:.2f}%"
+        else:
+            stats["Daily % Change"] = "N/A"  # Not enough data for daily change
+
+        # Year-to-Date (YTD) Percentage Change
+        # Find the first trading day of the current year in the data
+        current_year = data["Date"].iloc[-1].year
+        ytd_start_price_series = data[data["Date"].dt.year == current_year][price_col]
+
+        if not ytd_start_price_series.empty:
+            ytd_start_price = ytd_start_price_series.iloc[0]
+            ytd_change = (data[price_col].iloc[-1] - ytd_start_price) / ytd_start_price
+            stats["YTD % Change"] = f"{ytd_change * 100:.2f}%"
+        else:
+            stats["YTD % Change"] = "N/A"  # No data for current year
+
+        # 52-Week High/Low
+        # Filter data for the last 52 weeks (approx 365 days, handling non-trading days)
+        one_year_ago = data["Date"].iloc[-1] - pd.Timedelta(days=365)
+        last_52_weeks_data = data[data["Date"] >= one_year_ago]
+
+        if not last_52_weeks_data.empty:
+            stats["52-Week High"] = round(last_52_weeks_data[price_col].max(), 2)
+            stats["52-Week Low"] = round(last_52_weeks_data[price_col].min(), 2)
+        else:
+            stats["52-Week High"] = "N/A"
+            stats["52-Week Low"] = "N/A"
+
+        # Last Update / Data Freshness
+        stats["Last Data Date"] = data["Date"].iloc[-1].strftime("%Y-%m-%d")
+
+        # Earliest date available in the data (after filtering for DYNAMIC_START_DATE)
+        stats["Earliest Data Date"] = data["Date"].iloc[0].strftime("%Y-%m-%d")
+
         data["daily_returns"] = data[price_col].pct_change()
         volatility = data["daily_returns"].std() * np.sqrt(252)
 
