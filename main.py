@@ -6,8 +6,8 @@ from datetime import date, timedelta
 import requests
 from alpha_vantage.timeseries import TimeSeries
 
-# Import functions from our new modules
-from data_handler import (
+# Import functions from our new modules from the 'app_modules' package
+from app_modules.data_handler import (  # Changed
     load_finnhub_tickers,
     load_alpha_vantage_data,
     process_stock_data,
@@ -15,14 +15,17 @@ from data_handler import (
     process_technical_indicators,
     determine_periods,
 )
-from model_trainer import dynamic_winsorize, model_drafts, tune_and_train_final_model
-from plotter import plot_forecast
+from app_modules.model_trainer import (
+    dynamic_winsorize,
+    model_drafts,
+    tune_and_train_final_model,
+)  # Changed
+from app_modules.plotter import plot_forecast  # Changed
 from prophet.plot import plot_plotly
 from prophet.diagnostics import cross_validation, performance_metrics
 from prophet import Prophet
 import itertools
 import numpy as np
-
 
 load_dotenv()
 
@@ -66,7 +69,7 @@ with st.expander("-- Welcome! Click here to expand --"):
 
 
 ## Choose a Stock
-
+st.subheader("-- Choose a Stock --")
 with st.expander("-- Click here to expand --"):
     selected_stock = st.text_input(
         "Enter Symbol (Ticker List in Appendix)", value="goog"
@@ -239,7 +242,7 @@ plot_forecast(forecast_df, ticker_name, selected_stock)
 
 
 ## Chart Tips
-
+st.subheader("-- Chart Tips --")
 with st.expander("Click here to expand"):
     st.write("* Use the slider (above) to select a date range")
     st.write("* Click items in the legend to show/hide indicators")
@@ -249,7 +252,7 @@ with st.expander("Click here to expand"):
 
 
 ## Accuracy Metrics
-
+st.subheader("**-- Accuracy Metrics --**")
 if (
     len(scores_df) > 2
     and "smape" in scores_df.columns
@@ -261,9 +264,8 @@ else:
         "Accuracy metrics not fully available yet. (Requires successful training of all 3 models)"
     )
 
-st.write("-- More Metrics --")
+st.subheader("-- Model Iterations --")
 with st.expander("Click here to expand"):
-    st.subheader("-- Model Iterations --")
     st.write(
         "The tables below display the performance metrics for each model iteration. The 'Baseline Model' uses the raw closing prices, while the 'Winsorized Model' applies dynamic winsorization to the closing prices. The 'Final Model' is the best-performing model after hyperparameter tuning."
     )
@@ -310,7 +312,7 @@ with st.expander("Click here to expand"):
 
 
 ## About
-
+st.subheader("-- About --")
 with st.expander("Click here to expand"):
     about_str = f"""
     **-- The Tool --**
@@ -353,7 +355,7 @@ with st.expander("Click here to expand"):
     st.write(about_str)
 
 ## Appendix
-
+st.subheader("-- Appendix --")
 with st.expander("Click here to expand"):
     st.subheader("-- Ticker List --")
     if not pd.DataFrame(tickers_data).empty:
