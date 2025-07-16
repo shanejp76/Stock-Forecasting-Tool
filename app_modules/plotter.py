@@ -1,4 +1,3 @@
-# app_modules/plotter.py
 import streamlit as st
 import pandas as pd
 from plotly import graph_objs as go
@@ -36,8 +35,88 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     # --- TOP SUBPLOT: Price, Forecast, SMAs, Bollinger Bands, Cross Signals ---
     # Add traces in REVERSE order of desired legend appearance (from bottom to top in code)
     # This will make them appear from top to bottom in the actual Plotly legend.
+    # IMPORTANT: Traces added here for legend order should have visible="legendonly"
+    #            if they are also plotted in a different subplot.
 
-    # 12. Death Cross Signal
+    # 1. MACD Histogram (Now at the very top of the code to appear at the very bottom of the legend)
+    if (
+        "MACD" in data_to_plot.columns
+        and "MACD_Signal" in data_to_plot.columns
+        and "MACD_Hist" in data_to_plot.columns
+    ):
+        colors = ["red" if val < 0 else "green" for val in data_to_plot["MACD_Hist"]]
+        fig.add_trace(
+            go.Bar(
+                x=data_to_plot["Date"],
+                y=data_to_plot["MACD_Hist"],
+                name="MACD Histogram",
+                marker_color=colors,
+                visible="legendonly",  # ONLY visible in legend, not on this subplot
+            ),
+            row=1,
+            col=1,
+        )
+    else:
+        st.warning("MACD data not found. Skipping MACD Histogram trace in legend.")
+
+    # 2. MACD Signal
+    if (
+        "MACD" in data_to_plot.columns
+        and "MACD_Signal" in data_to_plot.columns
+        and "MACD_Hist" in data_to_plot.columns
+    ):
+        fig.add_trace(
+            go.Scatter(
+                x=data_to_plot["Date"],
+                y=data_to_plot["MACD_Signal"],
+                mode="lines",
+                name="MACD Signal",
+                line=dict(color="orange", width=1),
+                visible="legendonly",  # ONLY visible in legend, not on this subplot
+            ),
+            row=1,
+            col=1,
+        )
+    # No else warning here, as it's covered by the main MACD check
+
+    # 3. MACD
+    if (
+        "MACD" in data_to_plot.columns
+        and "MACD_Signal" in data_to_plot.columns
+        and "MACD_Hist" in data_to_plot.columns
+    ):
+        fig.add_trace(
+            go.Scatter(
+                x=data_to_plot["Date"],
+                y=data_to_plot["MACD"],
+                mode="lines",
+                name="MACD",
+                line=dict(color="blue", width=2),
+                visible="legendonly",  # ONLY visible in legend, not on this subplot
+            ),
+            row=1,
+            col=1,
+        )
+    # No else warning here, as it's covered by the main MACD check
+
+    # 4. RSI
+    if "RSI" in data_to_plot.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=data_to_plot["Date"],
+                y=data_to_plot["RSI"],
+                mode="lines",
+                name="RSI",
+                line=dict(color="purple"),
+                visible="legendonly",  # ONLY visible in legend, not on this subplot
+            ),
+            row=1,
+            col=1,
+        )
+    else:
+        st.warning("RSI data not found. Skipping RSI trace in legend.")
+
+    # 5. Death Cross Signal
     if "DeathCross_Signal" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -54,7 +133,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("Death Cross Signal not found in data_to_plot. Skipping this trace.")
 
-    # 11. Golden Cross Signal
+    # 6. Golden Cross Signal
     if "GoldenCross_Signal" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -73,7 +152,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
             "Golden Cross Signal not found in data_to_plot. Skipping this trace."
         )
 
-    # 10. Lower BB
+    # 7. Lower BB
     if "bb_lower" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -91,7 +170,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
             "Bollinger Band Lower not found in data_to_plot. Skipping this trace."
         )
 
-    # 9. Upper BB
+    # 8. Upper BB
     if "bb_upper" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -112,7 +191,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     # Reordered SMAs to appear numerically (20, 50, 100, 200) in legend
     # Added in reverse order in code: 200, 100, 50, 20
 
-    # 8. SMA200
+    # 9. SMA200
     if "SMA200" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -128,7 +207,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("SMA200 not found in data_to_plot. Skipping this trace.")
 
-    # 7. SMA100
+    # 10. SMA100
     if "SMA100" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -144,7 +223,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("SMA100 not found in data_to_plot. Skipping this trace.")
 
-    # 6. SMA50 (existing, moved into numerical order)
+    # 11. SMA50 (existing, moved into numerical order)
     if "SMA50" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -160,7 +239,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("SMA50 not found in data_to_plot. Skipping this trace.")
 
-    # 5. SMA20 (style changed to dotted black, moved into numerical order)
+    # 12. SMA20 (style changed to dotted black, moved into numerical order)
     if "SMA20" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -178,7 +257,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("SMA20 not found in data_to_plot. Skipping this trace.")
 
-    # 4. Forecast Lower Bound (Part of the fill group)
+    # 13. Forecast Lower Bound (Part of the fill group)
     if "yhat_lower" in data_to_plot.columns and "yhat_upper" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -196,7 +275,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
             "Forecast bounds (yhat_lower/yhat_upper) not found in data_to_plot. Skipping these traces."
         )
 
-    # 3. Forecast Upper Bound (Part of the fill group)
+    # 14. Forecast Upper Bound (Part of the fill group)
     if (
         "yhat_upper" in data_to_plot.columns
     ):  # Only need to check for upper if lower exists
@@ -214,7 +293,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
         )
     # No else warning here, as it's covered by the previous check for both lower/upper
 
-    # 2. Add Forecast (yhat)
+    # 15. Add Forecast (yhat)
     if "yhat" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -230,7 +309,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     else:
         st.warning("Forecast (yhat) not found in data_to_plot. Skipping this trace.")
 
-    # 1. Add Actual Close Price (moved to the bottom of the code to appear at the top of the legend)
+    # 16. Add Actual Close Price (moved to the bottom of the code to appear at the top of the legend)
     if "Adjusted Close" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -247,6 +326,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
         st.warning("Adjusted Close not found in data_to_plot. Skipping this trace.")
 
     # --- MIDDLE SUBPLOT: RSI ---
+    # This remains unchanged, showlegend=False is already applied here
     if "RSI" in data_to_plot.columns:
         fig.add_trace(
             go.Scatter(
@@ -255,6 +335,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 mode="lines",
                 name="RSI",
                 line=dict(color="purple"),
+                showlegend=False,  # Hide from the legend in the separate subplot
             ),
             row=2,
             col=1,
@@ -281,6 +362,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
         st.warning("RSI data not found. Skipping RSI plot.")
 
     # --- BOTTOM SUBPLOT: MACD ---
+    # This remains unchanged, showlegend=False is already applied here
     if (
         "MACD" in data_to_plot.columns
         and "MACD_Signal" in data_to_plot.columns
@@ -293,6 +375,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 mode="lines",
                 name="MACD",
                 line=dict(color="blue", width=2),
+                showlegend=False,  # Hide from the legend in the separate subplot
             ),
             row=3,
             col=1,
@@ -304,6 +387,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 mode="lines",
                 name="MACD Signal",
                 line=dict(color="orange", width=1),
+                showlegend=False,  # Hide from the legend in the separate subplot
             ),
             row=3,
             col=1,
@@ -317,6 +401,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 y=data_to_plot["MACD_Hist"],
                 name="MACD Histogram",
                 marker_color=colors,
+                showlegend=False,  # Hide from the legend in the separate subplot
             ),
             row=3,
             col=1,
