@@ -29,7 +29,7 @@ import itertools
 load_dotenv()
 
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_KEY")
-FINNHUB_API_KEY = os.getenv("FINNHub_API_KEY", "YOUR_FINNHUB_API_KEY")
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "YOUR_FINNHUB_API_KEY")
 EXCHANGE_CODE = "US"
 
 if ALPHA_VANTAGE_API_KEY is None:
@@ -288,36 +288,72 @@ else:
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
 # --- Display Forecast Summary Statements (Using st.text() for problematic line) ---
-if forecast_summary and forecast_summary["forecasted_price_N_days_out"] is not None:
+# --- REVISED SECTION START ---
+if not forecast_df.empty:
     st.markdown("---")  # Add a separator for clarity
-    st.subheader(f"125-Day Forecast Summary for {selected_stock}")
+    # Updated the header to reflect "10-Day Forecast"
+    st.subheader(f"10-Day Forecast Summary for {selected_stock}")
 
     confidence_level = "80%"
+    target_day = 10  # We want the 10th day from the start of the forecast
 
-    # These variables contain ONLY the numerical value or date string
-    forecast_price_val = forecast_summary["forecasted_price_N_days_out"]
-    forecast_date_str = forecast_summary["forecast_date_N_days_out"]
+    # Ensure the forecast_df has enough rows for the 10th day
+    if (
+        len(forecast_df) > data["Date"].nunique() + target_day - 1
+    ):  # + target_day -1 to account for 0-based indexing and actual future days
+        # Get the row corresponding to the 10th day into the forecast period
+        # We need to find the index for the 10th day *after* the last known historical date.
+        # The forecast_df is merged with actual data, so we need to find the point
+        # where the forecast truly begins.
+        last_actual_date = data["Date"].max()
 
-    trend_percentage_val = float(forecast_summary["trend_percentage"].replace("%", ""))
+        # Find the index of the first forecasted date in forecast_df
+        forecast_start_index = forecast_df[
+            forecast_df["Date"] > last_actual_date
+        ].index.min()
 
-    confidence_lower_val = forecast_summary["confidence_lower_N_days_out"]
-    confidence_upper_val = forecast_summary["confidence_upper_N_days_out"]
+        if pd.notna(forecast_start_index):
+            # Calculate the index for the 10th forecast day
+            # It's forecast_start_index + (target_day - 1) because target_day is 1-based (e.g., 1st day, 10th day)
+            # and DataFrame indexing is 0-based.
+            index_for_10th_day = forecast_start_index + (target_day - 1)
 
-    # First two lines use st.write with bolding, as they seem to work now
-    st.write(
-        f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
-    )
-    st.write(
-        f"This represents a **{trend_percentage_val:.2f}%** from the last known price."
-    )
+            if index_for_10th_day < len(forecast_df):
+                forecast_row = forecast_df.iloc[int(index_for_10th_day)]
 
-    # The third line uses st.text() to force plain text, avoiding markdown interpretation
-    # We still explicitly add the $ symbols and format the numbers
-    third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
-    st.text(third_line_text)
+                forecast_date_str = forecast_row["Date"].strftime("%Y-%m-%d")
+                forecast_price_val = forecast_row["yhat"]
+                confidence_lower_val = forecast_row["yhat_lower"]
+                confidence_upper_val = forecast_row["yhat_upper"]
 
+                # Calculate trend percentage relative to the last actual price
+                last_actual_price = data["Adjusted Close"].iloc[-1]
+                trend_percentage_val = (
+                    (forecast_price_val - last_actual_price) / last_actual_price
+                ) * 100
+
+                st.write(
+                    f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
+                )
+                st.write(
+                    f"This represents a **{trend_percentage_val:.2f}%** from the last known price."
+                )
+
+                third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
+                st.text(third_line_text)
+            else:
+                st.warning(
+                    f"Forecast for {target_day} days out is not available in the forecast data. Check forecast_period."
+                )
+        else:
+            st.warning(
+                "Could not determine the start of the forecast period in the merged data."
+            )
+    else:
+        st.warning(f"Forecast data is too short to provide a {target_day}-day summary.")
 else:
-    st.warning("Forecast summary not available or could not be generated.")
+    st.warning("Forecast summary not available: forecast_df is empty.")
+# --- REVISED SECTION END ---
 # --- End Forecast Summary Display ---
 
 
