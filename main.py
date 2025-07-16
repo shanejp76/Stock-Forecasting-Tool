@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from datetime import date, timedelta
 from alpha_vantage.timeseries import TimeSeries
 
+# Import functions from our new modules from the 'app_modules' package
 from app_modules.data_handler import (
     load_finnhub_tickers,
     load_alpha_vantage_data,
@@ -20,7 +21,9 @@ from app_modules.model_trainer import (
     tune_and_train_final_model,
 )
 from app_modules.plotter import plot_forecast
-from prophet.diagnostics import cross_validation
+from prophet.diagnostics import (
+    cross_validation,
+)  # Retained as it's used in run_cross_validation
 import itertools
 
 load_dotenv()
@@ -36,6 +39,7 @@ if ALPHA_VANTAGE_API_KEY is None:
     st.stop()
 else:
     ts_av = TimeSeries(key=ALPHA_VANTAGE_API_KEY, output_format="pandas")
+
 
 st.title("Stock Forecasting Tool")
 
@@ -62,6 +66,8 @@ with st.expander("Welcome! Click here to expand"):
     """
     )
 
+
+## Choose a Stock
 st.subheader("-- Choose a Stock --")
 with st.expander("Click here to expand"):
     selected_stock = st.text_input(
@@ -92,6 +98,7 @@ with st.expander("Click here to expand"):
         )
         st.stop()
 
+    # Process and filter data
     num_years_back = 2
     TODAY = date.today()
     DYNAMIC_START_DATE = TODAY - timedelta(days=num_years_back * 365)
@@ -281,10 +288,8 @@ else:
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
 # --- Display Forecast Summary Statements (Using st.text() for problematic line) ---
-# --- REVISED SECTION START ---
 if not forecast_df.empty:
     st.markdown("---")  # Add a separator for clarity
-    # Updated the header to reflect "10-Day Forecast"
     st.subheader(f"10-Day Forecast Summary for {selected_stock}")
 
     confidence_level = "80%"
@@ -328,9 +333,16 @@ if not forecast_df.empty:
                 st.write(
                     f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
                 )
-                st.write(
-                    f"This represents a **{trend_percentage_val:.2f}%** from the last known price."
-                )
+                # --- START OF CHANGE ---
+                if trend_percentage_val >= 0:
+                    st.write(
+                        f"This represents a **+{trend_percentage_val:.2f}% increase** from the last known price."
+                    )
+                else:
+                    st.write(
+                        f"This represents a **{trend_percentage_val:.2f}% decrease** from the last known price."
+                    )
+                # --- END OF CHANGE ---
 
                 third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
                 st.text(third_line_text)
@@ -346,7 +358,6 @@ if not forecast_df.empty:
         st.warning(f"Forecast data is too short to provide a {target_day}-day summary.")
 else:
     st.warning("Forecast summary not available: forecast_df is empty.")
-# --- REVISED SECTION END ---
 # --- End Forecast Summary Display ---
 
 
@@ -423,6 +434,7 @@ with st.expander("Click here to expand"):
         "Beyond statistical measures, these metrics translate directly into business impact. For instance, a lower Mean Absolute Error (MAE) signifies that, on average, our forecasts are closer to the actual stock price. This precision is critical as it directly reduces potential financial risk by providing more accurate price expectations. Similarly, the Root Mean Squared Error (RMSE) quantifies the typical magnitude of our prediction errors, which is invaluable for informing robust risk assessments and setting realistic expectations for portfolio management. The Symmetric Mean Absolute Percentage Error (SMAPE) further enhances this by providing a clear, percentage-based understanding of how far off our predictions are, on average, from the actual values."
     )
 
+## About
 st.subheader("-- About --")
 with st.expander("Click here to expand"):
     about_str = f"""
@@ -468,6 +480,7 @@ with st.expander("Click here to expand"):
     """
     st.write(about_str)
 
+## Appendix
 st.subheader("-- Appendix --")
 with st.expander("Click here to expand"):
     st.subheader("-- Ticker List --")
