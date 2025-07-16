@@ -3,7 +3,6 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 from datetime import date, timedelta
-import requests
 from alpha_vantage.timeseries import TimeSeries
 
 # Import functions from our new modules from the 'app_modules' package
@@ -21,11 +20,10 @@ from app_modules.model_trainer import (
     tune_and_train_final_model,
 )
 from app_modules.plotter import plot_forecast
-from prophet.plot import plot_plotly
-from prophet.diagnostics import cross_validation, performance_metrics
-from prophet import Prophet
+from prophet.diagnostics import (
+    cross_validation,
+)  # Retained as it's used in run_cross_validation
 import itertools
-import numpy as np
 
 load_dotenv()
 
@@ -85,7 +83,6 @@ with st.expander("Click here to expand"):
             break
 
     if selected_stock in tickers:
-        # Pass ts_av with an underscore in main.py call as well
         data = load_alpha_vantage_data(_ts_av=ts_av, ticker=selected_stock)
         if not data.empty:
             data_load_state.text(f"-- {ticker_name} Data Loaded. --")
@@ -173,14 +170,23 @@ else:
     )
     df_train = df_train
 
+
 # Lambda function for cross validation metrics
 # This needs to be defined here because `period_unit`, `train_period`, `forecast_period` are determined dynamically
-cv_func = lambda model_name: cross_validation(
-    model_name,
-    initial=f"{train_period} days",
-    period=f"{period_unit} days",
-    horizon=f"{forecast_period} days",
-)
+def run_cross_validation(model_name):
+    try:
+        return cross_validation(
+            model_name,
+            initial=f"{train_period} days",
+            period=f"{period_unit} days",
+            horizon=f"{forecast_period} days",
+        )
+    except ValueError as e:
+        st.warning(
+            f"Cross-validation failed: {e}. This might happen if your data is too short for the chosen initial, period, or horizon."
+        )
+        return pd.DataFrame()  # Return an empty DataFrame on failure
+
 
 # Get metrics for baseline & winsorized models
 scores_df = pd.DataFrame(columns=["mse", "rmse", "mae", "smape"])
@@ -189,8 +195,9 @@ data_load_state = st.text(
     "-- Please wait while the Baseline & Winsorized models train... --"
 )
 if not df_train.empty and len(df_train) > 0:
-    # Pass cv_func with an underscore
-    scores_df = model_drafts(df_train, scores_df, price_col, _cv_func=cv_func)
+    scores_df = model_drafts(
+        df_train, scores_df, price_col, _cv_func=run_cross_validation
+    )
     data_load_state.text("-- Baseline & Winsorized models Trained. --")
 else:
     data_load_state.text("-- Error in training models: Training data is empty. --")
@@ -216,10 +223,17 @@ all_params = [
 ]
 
 data_load_state = st.text("-- Please wait while the Final Model trains... --")
+# --- Capture the new forecast_summary return value ---
 if not df_train.empty and len(df_train) > 0:
-    # Pass cv_func with an underscore
-    m, scores_df, forecast, best_params_dict = tune_and_train_final_model(
-        df_train, all_params, forecast_period, scores_df, _cv_func=cv_func
+    m, scores_df, forecast, best_params_dict, forecast_summary = (
+        tune_and_train_final_model(
+            df_train,
+            all_params,
+            forecast_period,
+            scores_df,
+            _cv_func=run_cross_validation,
+            summary_n_days_out=forecast_period,  # Summarize for the full forecast period, e.g., 30 days out
+        )
     )
     if m is not None and not forecast.empty:
         data_load_state.text("-- Final Model Trained. --")
@@ -271,6 +285,39 @@ else:
 
 # --- Calling plot_forecast ---
 plot_forecast(forecast_df, ticker_name, selected_stock)
+
+# --- Display Forecast Summary Statements (Using st.text() for problematic line) ---
+if forecast_summary and forecast_summary["forecasted_price_N_days_out"] is not None:
+    st.markdown("---")  # Add a separator for clarity
+    st.subheader(f"125-Day Forecast Summary for {selected_stock}")
+
+    confidence_level = "80%"
+
+    # These variables contain ONLY the numerical value or date string
+    forecast_price_val = forecast_summary["forecasted_price_N_days_out"]
+    forecast_date_str = forecast_summary["forecast_date_N_days_out"]
+
+    trend_percentage_val = float(forecast_summary["trend_percentage"].replace("%", ""))
+
+    confidence_lower_val = forecast_summary["confidence_lower_N_days_out"]
+    confidence_upper_val = forecast_summary["confidence_upper_N_days_out"]
+
+    # First two lines use st.write with bolding, as they seem to work now
+    st.write(
+        f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
+    )
+    st.write(
+        f"This represents a **{trend_percentage_val:.2f}%** from the last known price."
+    )
+
+    # The third line uses st.text() to force plain text, avoiding markdown interpretation
+    # We still explicitly add the $ symbols and format the numbers
+    third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
+    st.text(third_line_text)
+
+else:
+    st.warning("Forecast summary not available or could not be generated.")
+# --- End Forecast Summary Display ---
 
 
 ## Chart Tips
@@ -335,7 +382,7 @@ with st.expander("Click here to expand"):
             "* Mean Squared Error (MSE) - this squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy."
         )
         st.write(
-            "* Root Mean Squared Error (RMSE) -  The square root of MSE. It is in the same units as the original data, making it easier to interpret. The RMSE of {round(scores_df.loc['Final Model']['rmse'], 4)} suggests that the model's predictions can deviate from the actual values by up to ${round(scores_df.loc['Final Model']['rmse'], 2)} in some cases."
+            "* Root Mean Squared Error (RMSE) -  The square root of MSE. It is in the same units as the original data, making it easier to interpret. The RMSE of {round(scores_df.loc['Final Model']['rmse'], 4)} suggests that the model's predictions can deviate from the actual values by up to ${round(scores_df.loc['Final Model']['rmse'], 2)} in some cases."
         )
     else:
         st.write(

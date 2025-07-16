@@ -1,3 +1,4 @@
+# app_modules/plotter.py
 import streamlit as st
 import pandas as pd
 from plotly import graph_objs as go
@@ -33,7 +34,6 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
     )
 
     # --- TOP SUBPLOT: Price, Forecast, SMAs, Bollinger Bands, Cross Signals ---
-    # Legend ordering is now simpler as RSI/MACD traces are not added here at all.
 
     # 1. Death Cross Signal
     if "DeathCross_Signal" in data_to_plot.columns:
