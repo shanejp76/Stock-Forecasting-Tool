@@ -270,6 +270,7 @@ if not forecast.empty and not data.empty:
             "MACD",
             "MACD_Signal",
             "MACD_Hist",
+            "Volume",  # Include Volume for BI KPIs
         ]
     ]
     forecast_df.rename(columns={"ds": "Date"}, inplace=True)
@@ -296,24 +297,13 @@ if not forecast_df.empty:
     target_day = 10  # We want the 10th day from the start of the forecast
 
     # Ensure the forecast_df has enough rows for the 10th day
-    if (
-        len(forecast_df) > data["Date"].nunique() + target_day - 1
-    ):  # + target_day -1 to account for 0-based indexing and actual future days
-        # Get the row corresponding to the 10th day into the forecast period
-        # We need to find the index for the 10th day *after* the last known historical date.
-        # The forecast_df is merged with actual data, so we need to find the point
-        # where the forecast truly begins.
+    if len(forecast_df) > data["Date"].nunique() + target_day - 1:
         last_actual_date = data["Date"].max()
-
-        # Find the index of the first forecasted date in forecast_df
         forecast_start_index = forecast_df[
             forecast_df["Date"] > last_actual_date
         ].index.min()
 
         if pd.notna(forecast_start_index):
-            # Calculate the index for the 10th forecast day
-            # It's forecast_start_index + (target_day - 1) because target_day is 1-based (e.g., 1st day, 10th day)
-            # and DataFrame indexing is 0-based.
             index_for_10th_day = forecast_start_index + (target_day - 1)
 
             if index_for_10th_day < len(forecast_df):
@@ -324,7 +314,6 @@ if not forecast_df.empty:
                 confidence_lower_val = forecast_row["yhat_lower"]
                 confidence_upper_val = forecast_row["yhat_upper"]
 
-                # Calculate trend percentage relative to the last actual price
                 last_actual_price = data["Adjusted Close"].iloc[-1]
                 trend_percentage_val = (
                     (forecast_price_val - last_actual_price) / last_actual_price
@@ -333,7 +322,6 @@ if not forecast_df.empty:
                 st.write(
                     f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
                 )
-                # --- START OF CHANGE ---
                 if trend_percentage_val >= 0:
                     st.write(
                         f"This represents a **+{trend_percentage_val:.2f}% increase** from the last known price."
@@ -342,7 +330,6 @@ if not forecast_df.empty:
                     st.write(
                         f"This represents a **{trend_percentage_val:.2f}% decrease** from the last known price."
                     )
-                # --- END OF CHANGE ---
 
                 third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
                 st.text(third_line_text)
@@ -360,45 +347,234 @@ else:
     st.warning("Forecast summary not available: forecast_df is empty.")
 # --- End Forecast Summary Display ---
 
-
-## Chart Tips
-st.subheader("-- Chart Tips --")
-with st.expander("Click here to expand"):
-    st.write("* Use the slider (above) to select a date range")
-    st.write("* Click items in the legend to show/hide indicators")
-    st.write(
-        "* Hover in the upper-right corner of graph to reveal controls. Go fullscreen and explore!"
-    )
+# --- REMOVED CHART TIPS ENTIRELY ---
 
 
 ## Accuracy Metrics
-st.subheader("**-- Predicted Accuracy --**")
+st.subheader("**-- Predicted Accuracy --**")  # Changed header
 if (
     len(scores_df) > 2
     and "smape" in scores_df.columns
     and "Final Model" in scores_df.index
 ):
-    st.subheader(f'{100-(round(scores_df.loc["Final Model"]["smape"]*100, 2))}%')
+    # New line after "Model Accuracy" using st.metric
+    accuracy_percentage = 100 - (round(scores_df.loc["Final Model"]["smape"] * 100, 2))
+    st.metric(label="Model Accuracy", value=f"{accuracy_percentage:.2f}%")
 else:
     st.write(
         "Accuracy metrics not fully available yet. (Requires successful training of all 3 models)"
     )
 
-st.subheader("-- Model Iterations --")
+# --- NEW SECTION FOR BI-CENTRIC KPIS ---
+st.subheader("-- Business Intelligence KPIs --")
+with st.expander("Click here to expand"):  # Changed expander text
+    if not forecast_df.empty and not data.empty:
+        last_actual_price = data["Adjusted Close"].iloc[-1]
+        last_actual_date = data["Date"].max()
+
+        # Ensure forecast_df is sorted by Date
+        forecast_df_sorted = forecast_df.sort_values(by="Date").reset_index(drop=True)
+
+        # Get the first actual forecast date index
+        forecast_start_idx = forecast_df_sorted[
+            forecast_df_sorted["Date"] > last_actual_date
+        ].index.min()
+
+        if pd.notna(forecast_start_idx):
+            # Price Movement Analysis KPIs
+            st.markdown("### Price Movement Forecasts")
+
+            price_movement_data = {}
+            periods = [1, 7, 30]  # Periods for forecast
+
+            for p in periods:
+                target_forecast_idx = int(forecast_start_idx + (p - 1))
+                if target_forecast_idx < len(forecast_df_sorted):
+                    forecast_price = forecast_df_sorted.loc[target_forecast_idx, "yhat"]
+                    percentage_change = (
+                        (forecast_price - last_actual_price) / last_actual_price
+                    ) * 100
+
+                    if percentage_change >= 0:
+                        change_text = f"+{percentage_change:.2f}% increase"
+                    else:
+                        change_text = f"{percentage_change:.2f}% decrease"
+
+                    price_movement_data[f"{p}-Day Forecast Price Change"] = change_text
+                    price_movement_data[f"{p}-Day Forecast Price"] = (
+                        f"${forecast_price:.2f}"
+                    )
+                else:
+                    price_movement_data[f"{p}-Day Forecast Price Change"] = (
+                        "N/A (Forecast too short)"
+                    )
+                    price_movement_data[f"{p}-Day Forecast Price"] = "N/A"
+
+            # Convert dictionary to DataFrame for display
+            price_movement_df = pd.DataFrame.from_dict(
+                price_movement_data, orient="index", columns=["Value"]
+            )
+            st.dataframe(
+                price_movement_df.T, use_container_width=True
+            )  # Transpose for better display
+
+            # Volume Trends KPI
+            st.markdown("### Volume Trends")
+            if "Volume" in data.columns:
+                recent_volume = data["Volume"].iloc[-1] if not data.empty else "N/A"
+                average_daily_volume = (
+                    data["Volume"].mean() if not data.empty else "N/A"
+                )
+
+                st.write(f"**Current/Last Known Volume:** {recent_volume:,.0f}")
+                st.write(
+                    f"**Average Daily Volume (Historical):** {average_daily_volume:,.0f}"
+                )
+                # Added significance explanation
+                st.markdown(
+                    """
+                    * **Significance:** Volume indicates market interest and liquidity. 
+                    * Higher volumes during price movements can confirm the strength of a trend. 
+                    * A significant difference between recent and average volume might suggest unusual trading activity.
+                    """
+                )
+            else:
+                st.write("Volume data not available.")
+
+            # Volatility KPI
+            st.markdown("### Volatility Assessment")
+            if volatility is not None:
+                # Determine categorical rank for volatility
+                volatility_rank = "Not Available"
+                if volatility < 15.0:
+                    volatility_rank = "Low Volatility"
+                elif 15.0 <= volatility < 30.0:
+                    volatility_rank = "Moderate Volatility"
+                elif 30.0 <= volatility < 50.0:
+                    volatility_rank = "High Volatility"
+                else:
+                    volatility_rank = "Very High Volatility"
+
+                st.write(f"**Annualized Volatility:** {volatility:.2f}%")
+                st.write(
+                    f"**Volatility Rank:** {volatility_rank}"
+                )  # Display categorical rank
+                st.write(
+                    "*(Higher volatility indicates greater price fluctuation risk and potential for larger daily swings.)*"
+                )
+            else:
+                st.write("Volatility data not available.")
+
+            # Placeholder for Correlation to Market Index
+            st.markdown("### Market Correlation (Placeholder)")
+            st.write(
+                f"**Correlation to S&P 500 (e.g., SPY):** *(Requires additional data fetching and calculation)*"
+            )
+            st.write(
+                "*(A value close to +1 indicates strong positive correlation, -1 strong negative correlation, 0 no correlation)*"
+            )
+            st.write(
+                "*(This KPI helps understand how the stock's movement relates to the broader market.)*"
+            )
+
+        else:
+            st.warning("Could not calculate BI KPIs: Forecast start index not found.")
+    else:
+        st.warning("BI KPIs not available: forecast_df or data is empty.")
+# --- END NEW SECTION FOR BI-CENTRIC KPIS ---
+
+
+st.subheader(
+    "-- Model Iterations and Performance (Narrative & KPIs) --"
+)  # Updated header for narrative & KPIs
 with st.expander("Click here to expand"):
     st.write(
         "The tables below illustrate the methodical and iterative approach to model refinement and performance optimization, a critical skill in data science. We begin with a Baseline Model using raw data, then introduce a Winsorized Model to address data challenges posed by outliers, demonstrating the implementation of effective data preprocessing solutions. Finally, the Final Model showcases performance optimization through rigorous hyperparameter tuning. Each stage is rigorously evaluated using cross-validation and a comparison of performance metrics (SMAPE, RMSE, MAE, MSE), clearly demonstrating the tangible improvements gained at each step. This process highlights a comprehensive data science workflow, from identifying data-driven problems and implementing solutions to optimizing model performance and validating improvements for enhanced predictive accuracy and business value."
     )
 
     if "Baseline Model" in scores_df.index:
-        st.write("-- Baseline Model --")
+        st.write("### Baseline Model")  # Changed to H3 for hierarchy
         st.dataframe(scores_df.loc[["Baseline Model"]], width=500)
-    if "Winsorized Model" in scores_df.index:
-        st.write("-- Winsorized Model --")
+        # --- Baseline Narrative (No comparison here) ---
+        st.write(
+            "This initial model establishes a performance benchmark using raw historical data. It provides a baseline understanding of forecasting accuracy before applying any advanced data preprocessing or tuning techniques."
+        )
+
+    if "Winsorized Model" in scores_df.index and "Baseline Model" in scores_df.index:
+        st.write("### Winsorized Model")  # Changed to H3
         st.dataframe(scores_df.loc[["Winsorized Model"]], width=500)
-    if "Final Model" in scores_df.index:
-        st.write("-- Final Model --")
+        # --- Winsorized Narrative with KPI Improvement ---
+        baseline_rmse = scores_df.loc["Baseline Model"]["rmse"]
+        winsorized_rmse = scores_df.loc["Winsorized Model"]["rmse"]
+
+        baseline_mae = scores_df.loc["Baseline Model"]["mae"]
+        winsorized_mae = scores_df.loc["Winsorized Model"]["mae"]
+
+        baseline_smape = scores_df.loc["Baseline Model"]["smape"]
+        winsorized_smape = scores_df.loc["Winsorized Model"]["smape"]
+
+        if (
+            baseline_rmse > 0 and baseline_mae > 0 and baseline_smape > 0
+        ):  # Avoid division by zero
+            rmse_improvement = ((baseline_rmse - winsorized_rmse) / baseline_rmse) * 100
+            mae_improvement = ((baseline_mae - winsorized_mae) / baseline_mae) * 100
+            smape_improvement = (
+                (baseline_smape - winsorized_smape) / baseline_smape
+            ) * 100
+
+            st.write(
+                f"**Impact of Winsorization:** By addressing outliers, the Winsorized Model significantly improved predictive accuracy. "
+                f"We observed a **{rmse_improvement:.2f}% reduction in RMSE**, a **{mae_improvement:.2f}% reduction in MAE**, and a **{smape_improvement:.2f}% reduction in SMAPE** compared to the Baseline Model. "
+                "This demonstrates the crucial role of data preprocessing in building more robust and reliable forecasts, leading to more confident decision-making by mitigating the impact of extreme price fluctuations."
+            )
+        else:
+            st.write(
+                "This model applies Winsorization to mitigate the impact of outliers. It aims to improve robustness and reduce noise in the forecast."
+            )
+
+    if "Final Model" in scores_df.index and "Winsorized Model" in scores_df.index:
+        st.write("### Final Model (Hyperparameter Tuned)")  # Changed to H3
         st.dataframe(scores_df.loc[["Final Model"]], width=500)
+        # --- Final Model Narrative with KPI Improvement ---
+        winsorized_rmse = scores_df.loc["Winsorized Model"]["rmse"]
+        final_rmse = scores_df.loc["Final Model"]["rmse"]
+
+        winsorized_mae = scores_df.loc["Winsorized Model"]["mae"]
+        final_mae = scores_df.loc["Final Model"]["mae"]
+
+        winsorized_smape = scores_df.loc["Winsorized Model"]["smape"]
+        final_smape = scores_df.loc["Final Model"]["smape"]
+
+        if (
+            winsorized_rmse > 0 and winsorized_mae > 0 and winsorized_smape > 0
+        ):  # Avoid division by zero
+            rmse_improvement_final = (
+                (winsorized_rmse - final_rmse) / winsorized_rmse
+            ) * 100
+            mae_improvement_final = (
+                (winsorized_mae - final_mae) / winsorized_mae
+            ) * 100
+            smape_improvement_final = (
+                (winsorized_smape - final_smape) / winsorized_smape
+            ) * 100
+
+            st.write(
+                f"**Impact of Hyperparameter Tuning:** The Final Model, optimized through rigorous hyperparameter tuning, "
+                f"achieved further performance gains. We saw an additional **{rmse_improvement_final:.2f}% reduction in RMSE**, "
+                f"a **{mae_improvement_final:.2f}% reduction in MAE**, and a **{smape_improvement_final:.2f}% reduction in SMAPE** "
+                "compared to the Winsorized Model. This fine-tuning process ensures the model precisely captures underlying patterns, "
+                "delivering highly accurate forecasts that directly translate into improved decision quality and reduced financial risk."
+            )
+        else:
+            st.write(
+                "The final model undergoes rigorous hyperparameter tuning to optimize its performance. This aims to maximize predictive accuracy."
+            )
+    elif "Final Model" in scores_df.index:  # In case winsorized model wasn't available
+        st.write("### Final Model (Hyperparameter Tuned)")
+        st.dataframe(scores_df.loc[["Final Model"]], width=500)
+        st.write(
+            "The final model undergoes rigorous hyperparameter tuning to optimize its performance. This aims to maximize predictive accuracy."
+        )
     else:
         st.write("Not all model iteration metrics are available.")
 
@@ -414,16 +590,16 @@ with st.expander("Click here to expand"):
         and "Final Model" in scores_df.index
     ):
         st.write(
-            f"* Mean Absolute Error (MAE) - a MAE of {round(scores_df.loc['Final Model']['mae'], 4)} implies that, on average, the model's predictions are off by approximately ${round(scores_df.loc['Final Model']['mae'], 2)}."
+            f"* **MAE (Mean Absolute Error) KPI:** A MAE of **${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
         )
         st.write(
-            f"* Symmetric Mean Absolute Percentage Error (SMAPE) - a SMAPE of {round(scores_df.loc['Final Model']['smape'], 4)} means that, on average, the model's predictions are {round(scores_df.loc['Final Model']['smape'] * 100, 2)}% off from the actual values."
+            f"* **SMAPE (Symmetric Mean Absolute Percentage Error) KPI:** A SMAPE of **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** means that, on average, the model's predictions are **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** off from the actual values. This provides a normalized, business-friendly view of percentage accuracy."
         )
         st.write(
-            "* Mean Squared Error (MSE) - this squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy."
+            "* **MSE (Mean Squared Error) KPI:** This squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy. While less intuitive for direct business interpretation, it's a critical metric for model optimization."
         )
         st.write(
-            "* Root Mean Squared Error (RMSE) -  The square root of MSE. It is in the same units as the original data, making it easier to interpret. The RMSE of {round(scores_df.loc['Final Model']['rmse'], 4)} suggests that the model's predictions can deviate from the actual values by up to ${round(scores_df.loc['Final Model']['rmse'], 2)} in some cases."
+            f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
         )
     else:
         st.write(
