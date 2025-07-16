@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from datetime import date, timedelta
 from alpha_vantage.timeseries import TimeSeries
 
-# Import functions from our new modules from the 'app_modules' package
 from app_modules.data_handler import (
     load_finnhub_tickers,
     load_alpha_vantage_data,
@@ -21,9 +20,7 @@ from app_modules.model_trainer import (
     tune_and_train_final_model,
 )
 from app_modules.plotter import plot_forecast
-from prophet.diagnostics import (
-    cross_validation,
-)  # Retained as it's used in run_cross_validation
+from prophet.diagnostics import cross_validation
 import itertools
 
 load_dotenv()
@@ -39,7 +36,6 @@ if ALPHA_VANTAGE_API_KEY is None:
     st.stop()
 else:
     ts_av = TimeSeries(key=ALPHA_VANTAGE_API_KEY, output_format="pandas")
-
 
 st.title("Stock Forecasting Tool")
 
@@ -66,8 +62,6 @@ with st.expander("Welcome! Click here to expand"):
     """
     )
 
-
-## Choose a Stock
 st.subheader("-- Choose a Stock --")
 with st.expander("Click here to expand"):
     selected_stock = st.text_input(
@@ -98,7 +92,6 @@ with st.expander("Click here to expand"):
         )
         st.stop()
 
-    # Process and filter data
     num_years_back = 2
     TODAY = date.today()
     DYNAMIC_START_DATE = TODAY - timedelta(days=num_years_back * 365)
@@ -430,7 +423,6 @@ with st.expander("Click here to expand"):
         "Beyond statistical measures, these metrics translate directly into business impact. For instance, a lower Mean Absolute Error (MAE) signifies that, on average, our forecasts are closer to the actual stock price. This precision is critical as it directly reduces potential financial risk by providing more accurate price expectations. Similarly, the Root Mean Squared Error (RMSE) quantifies the typical magnitude of our prediction errors, which is invaluable for informing robust risk assessments and setting realistic expectations for portfolio management. The Symmetric Mean Absolute Percentage Error (SMAPE) further enhances this by providing a clear, percentage-based understanding of how far off our predictions are, on average, from the actual values."
     )
 
-## About
 st.subheader("-- About --")
 with st.expander("Click here to expand"):
     about_str = f"""
@@ -476,7 +468,6 @@ with st.expander("Click here to expand"):
     """
     st.write(about_str)
 
-## Appendix
 st.subheader("-- Appendix --")
 with st.expander("Click here to expand"):
     st.subheader("-- Ticker List --")
