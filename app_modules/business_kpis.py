@@ -1,9 +1,9 @@
 # app_modules/business_kpis.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 
-# MODIFIED: Added 'stats' to the function arguments
 def display_business_kpis(forecast_df, data, stats, volatility, market_correlation):
     """
     Displays business intelligence KPIs.
@@ -72,31 +72,56 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                 st.dataframe(price_movement_df.T, use_container_width=True)
 
                 st.markdown("### Volume Trends")
-                if "Volume" in data.columns:
-                    recent_volume = data["Volume"].iloc[-1] if not data.empty else "N/A"
-                    average_daily_volume = (
-                        data["Volume"].mean() if not data.empty else "N/A"
+                if "Volume" in data.columns and not data.empty:
+                    recent_volume = data["Volume"].iloc[-1]
+                    average_daily_volume = data["Volume"].mean()
+
+                    volume_data = {}
+                    volume_data["Current/Last Known Volume"] = f"{recent_volume:,.0f}"
+                    volume_data["Average Daily Volume (Historical)"] = (
+                        f"{average_daily_volume:,.0f}"
                     )
 
-                    st.write(f"**Current/Last Known Volume:** {recent_volume:,.0f}")
-                    st.write(
-                        f"**Average Daily Volume (Historical):** {average_daily_volume:,.0f}"
+                    volume_percentage_difference = np.nan
+                    if average_daily_volume != 0:
+                        volume_percentage_difference = (
+                            (recent_volume - average_daily_volume)
+                            / average_daily_volume
+                        ) * 100
+                        if volume_percentage_difference >= 0:
+                            volume_data["% Diff from Average Volume"] = (
+                                f"+{volume_percentage_difference:.2f}%"
+                            )
+                        else:
+                            volume_data["% Diff from Average Volume"] = (
+                                f"{volume_percentage_difference:.2f}%"
+                            )
+                    else:
+                        volume_data["% Diff from Average Volume"] = (
+                            "N/A (Avg Volume is Zero)"
+                        )
+
+                    volume_df = pd.DataFrame.from_dict(
+                        volume_data, orient="index", columns=["Value"]
                     )
+                    st.dataframe(volume_df.T, use_container_width=True)
+
                     st.markdown(
                         """
                         * **Significance:** Volume indicates market interest and liquidity.
                         * Higher volumes during price movements can confirm the strength of a trend.
                         * A significant difference between recent and average volume might suggest unusual trading activity.
+                        * **Interpreting Percentage Difference:**
+                            * **High Positive (e.g., > +20%):** Suggests unusually strong buying or selling interest, often confirming a price trend.
+                            * **High Negative (e.g., < -20%):** Indicates declining interest or lower liquidity, which can signal weakening trends.
+                            * *Note: The exact 'significant' threshold can vary greatly depending on the stock's typical liquidity and market conditions.*
                         """
                     )
                 else:
                     st.write("Volume data not available.")
 
                 st.markdown("### Volatility Assessment")
-                if (
-                    volatility is not None and "Annualized Volatility" in stats
-                ):  # Check if stats contains the key
-                    # Use the pre-calculated rank from stats
+                if volatility is not None and "Annualized Volatility" in stats:
                     volatility_rank = stats["Annualized Volatility"]
 
                     st.write(f"**Annualized Volatility:** {volatility:.2%}")
@@ -107,7 +132,6 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                 else:
                     st.write("Volatility data not available.")
 
-                # --- NEW CONTENT: Market Correlation ---
                 st.markdown("### Market Correlation")
                 if market_correlation is not None:
                     st.write(
