@@ -137,11 +137,14 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                     st.write(
                         f"**Correlation to S&P 500 (SPY):** {market_correlation:.2f}"
                     )
-                    st.write(
-                        "*(A value close to +1 indicates strong positive correlation, -1 strong negative correlation, 0 no correlation)*"
-                    )
-                    st.write(
-                        "*(This KPI helps understand how the stock's movement relates to the broader market.)*"
+                    st.markdown(
+                        """
+                        * A value close to +1 means strong positive correlation, -1 strong negative correlation, 0 no correlation.
+                        * **Implications:**
+                            * **Positive (+1):** Stock generally moves *with* the market. Offers limited diversification; exposed to broader market risks.
+                            * **Negative (-1):** Stock generally moves *opposite* the market. Can offer diversification/hedging benefits (rare for individual stocks).
+                            * **Near Zero (0):** Stock moves *independently* of the market. Good for diversification; performance tied to company-specific factors.
+                        """
                     )
                 else:
                     st.write(
