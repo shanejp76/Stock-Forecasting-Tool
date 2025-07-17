@@ -26,11 +26,10 @@ from prophet.diagnostics import (
 )  # Retained as it's used in run_cross_validation
 import itertools
 
-load_dotenv()
+from app_modules.config import load_environment_variables, EXCHANGE_CODE
 
-ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_KEY")
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "YOUR_FINNHUB_API_KEY")
-EXCHANGE_CODE = "US"
+# Load API keys using the new config module
+ALPHA_VANTAGE_API_KEY, FINNHUB_API_KEY = load_environment_variables()
 
 if ALPHA_VANTAGE_API_KEY is None:
     st.error(
