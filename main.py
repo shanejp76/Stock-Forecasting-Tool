@@ -9,10 +9,10 @@ import itertools
 
 # Import functions from our new modules from the 'app_modules' package
 from app_modules.data_handler import (
-    load_finnhub_tickers,  # Still needed for initial API key check in main
-    load_alpha_vantage_data,  # Still needed for initial API key check in main
-    process_stock_data,  # Still needed for initial API key check in main
-    calculate_stock_stats,  # Still needed for initial API key check in main
+    load_finnhub_tickers,
+    load_alpha_vantage_data,
+    process_stock_data,
+    calculate_stock_stats,
     process_technical_indicators,
     determine_periods,
 )
@@ -27,14 +27,14 @@ from prophet.diagnostics import (
 )
 from app_modules.config import load_environment_variables, EXCHANGE_CODE
 
-# Import new UI modules
+# Import new UI modules - UPDATED IMPORTS
 from app_modules.ui_intro import display_welcome_expander, display_stock_selection
-from app_modules.ui_metrics import (
-    display_forecast_summary,
+from app_modules.forecast_summary import display_forecast_summary  # New import
+from app_modules.performance_metrics import (
     display_accuracy_metrics,
-    display_business_kpis,
     display_model_performance,
-)
+)  # New import
+from app_modules.business_kpis import display_business_kpis  # New import
 from app_modules.ui_appendix import display_appendix
 
 
