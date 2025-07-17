@@ -29,13 +29,16 @@ from app_modules.config import load_environment_variables, EXCHANGE_CODE
 
 # Import new UI modules - UPDATED IMPORTS
 from app_modules.ui_intro import display_welcome_expander, display_stock_selection
-from app_modules.forecast_summary import display_forecast_summary  # New import
+from app_modules.forecast_summary import display_forecast_summary
 from app_modules.performance_metrics import (
     display_accuracy_metrics,
     display_model_performance,
-)  # New import
-from app_modules.business_kpis import display_business_kpis  # New import
+)
+from app_modules.business_kpis import display_business_kpis
 from app_modules.ui_appendix import display_appendix
+
+# NEW IMPORT: Import the market_correlation module
+from app_modules.market_correlation import calculate_market_correlation
 
 
 # Load API keys
@@ -209,6 +212,16 @@ if len(scores_df) >= 3:
 else:
     st.warning("Not enough model scores for comparison. Displaying available scores.")
 
+# NEW STEP: Calculate Market Correlation
+market_correlation = None
+if not data.empty:
+    with st.spinner("Calculating market correlation..."):
+        # Pass the _ts_av object (which is the TimeSeries client) and the stock's data
+        market_correlation = calculate_market_correlation(ts_av, data.copy())
+else:
+    st.warning("Stock data is empty, skipping market correlation calculation.")
+
+
 # --- Calling plot_forecast ---
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
@@ -219,7 +232,8 @@ display_forecast_summary(forecast_df, data, selected_stock)
 display_accuracy_metrics(scores_df)
 
 # --- UI: Business Intelligence KPIs ---
-display_business_kpis(forecast_df, data, volatility)
+# UPDATED CALL: Pass market_correlation to display_business_kpis
+display_business_kpis(forecast_df, data, volatility, market_correlation)
 
 # --- UI: Model Iterations and Performance ---
 display_model_performance(scores_df, best_params_dict, selected_stock)
