@@ -1,4 +1,3 @@
-# app_modules/performance_metrics.py
 import streamlit as st
 import pandas as pd
 
@@ -26,7 +25,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
     st.subheader("-- Model Iterations and Performance (Narrative & KPIs) --")
     with st.expander("Click here to expand"):
         st.write(
-            "The tables below illustrate the methodical and iterative approach to model refinement and performance optimization, a critical skill in data science. We begin with a Baseline Model using raw data, then introduce a Winsorized Model to address data challenges posed by outliers, demonstrating the implementation of effective data preprocessing solutions. Finally, the Final Model showcases performance optimization through rigorous hyperparameter tuning. Each stage is rigorously evaluated using cross-validation and a comparison of performance metrics (SMAPE, RMSE, MAE, MSE), clearly demonstrating the tangible improvements gained at each step. This process highlights a comprehensive data science workflow, from identifying data-driven problems and implementing solutions to optimizing model performance and validating improvements for enhanced predictive accuracy and business value."
+            "The tables below illustrate the methodical and iterative approach to model refinement and performance optimization, a critical skill in data science. We begin with a **Baseline Model** using raw data, then introduce a **Winsorized Model** to address data challenges posed by outliers, demonstrating the implementation of effective data preprocessing solutions. Your script then selects the best-performing model between the Baseline and Winsorized models for **hyperparameter tuning**, resulting in the **Final Model**. Each stage is rigorously evaluated using cross-validation and a comparison of performance metrics (SMAPE, RMSE, MAE, MSE), clearly demonstrating the tangible improvements gained at each step. This process highlights a comprehensive data science workflow, from identifying data-driven problems and implementing solutions to optimizing model performance and validating improvements for enhanced predictive accuracy and business value."
         )
 
         if "Baseline Model" in scores_df.index:
@@ -49,7 +48,15 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
             baseline_smape = scores_df.loc["Baseline Model"]["smape"]
             winsorized_smape = scores_df.loc["Winsorized Model"]["smape"]
 
-            if baseline_rmse > 0 and baseline_mae > 0 and baseline_smape > 0:
+            # Check if Winsorization improved metrics
+            if (
+                winsorized_rmse < baseline_rmse
+                and winsorized_mae < baseline_mae
+                and winsorized_smape < baseline_smape
+                and baseline_rmse > 0
+                and baseline_mae > 0
+                and baseline_smape > 0
+            ):
                 rmse_improvement = (
                     (baseline_rmse - winsorized_rmse) / baseline_rmse
                 ) * 100
@@ -59,41 +66,82 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
                 ) * 100
 
                 st.write(
-                    f"**Impact of Winsorization:** By addressing outliers, the Winsorized Model significantly improved predictive accuracy. "
+                    f"**Impact of Winsorization:** This model applies Winsorization to mitigate the impact of outliers. In this instance, by addressing outliers, the Winsorized Model improved predictive accuracy. "
                     f"We observed a **{rmse_improvement:.2f}% reduction in RMSE**, a **{mae_improvement:.2f}% reduction in MAE**, and a **{smape_improvement:.2f}% reduction in SMAPE** compared to the Baseline Model. "
-                    "This demonstrates the crucial role of data preprocessing in building more robust and reliable forecasts, leading to more confident decision-making by mitigating the impact of extreme price fluctuations."
+                    "This demonstrates the potential role of data preprocessing in building more robust and reliable forecasts, leading to more confident decision-making by mitigating the impact of extreme price fluctuations."
                 )
             else:
                 st.write(
-                    "This model applies Winsorization to mitigate the impact of outliers. It aims to improve robustness and reduce noise in the forecast."
+                    "This model applies Winsorization to mitigate the impact of outliers. It aims to improve robustness and reduce noise in the forecast. **Note: Winsorization does not always guarantee improvements in all key metrics; the better-performing model between the Baseline and Winsorized is selected for hyperparameter tuning.**"
                 )
 
-        if "Final Model" in scores_df.index and "Winsorized Model" in scores_df.index:
+        if "Final Model" in scores_df.index and (
+            "Winsorized Model" in scores_df.index or "Baseline Model" in scores_df.index
+        ):
             st.write("### Final Model (Hyperparameter Tuned)")
             st.dataframe(scores_df.loc[["Final Model"]], width=500)
-            winsorized_rmse = scores_df.loc["Winsorized Model"]["rmse"]
+
+            # Determine which model was chosen for tuning (Baseline or Winsorized)
+            model_for_tuning_name = ""
+            model_for_tuning_rmse = 0
+            model_for_tuning_mae = 0
+            model_for_tuning_smape = 0
+
+            if (
+                "Winsorized Model" in scores_df.index
+                and "Baseline Model" in scores_df.index
+            ):
+                # Assuming the script picks the best one based on RMSE (or another metric, adjust if needed)
+                if (
+                    scores_df.loc["Winsorized Model"]["rmse"]
+                    < scores_df.loc["Baseline Model"]["rmse"]
+                ):
+                    model_for_tuning_name = "Winsorized Model"
+                    model_for_tuning_rmse = scores_df.loc["Winsorized Model"]["rmse"]
+                    model_for_tuning_mae = scores_df.loc["Winsorized Model"]["mae"]
+                    model_for_tuning_smape = scores_df.loc["Winsorized Model"]["smape"]
+                else:
+                    model_for_tuning_name = "Baseline Model"
+                    model_for_tuning_rmse = scores_df.loc["Baseline Model"]["rmse"]
+                    model_for_tuning_mae = scores_df.loc["Baseline Model"]["mae"]
+                    model_for_tuning_smape = scores_df.loc["Baseline Model"]["smape"]
+            elif (
+                "Winsorized Model" in scores_df.index
+            ):  # If only Winsorized exists (shouldn't happen with baseline always first)
+                model_for_tuning_name = "Winsorized Model"
+                model_for_tuning_rmse = scores_df.loc["Winsorized Model"]["rmse"]
+                model_for_tuning_mae = scores_df.loc["Winsorized Model"]["mae"]
+                model_for_tuning_smape = scores_df.loc["Winsorized Model"]["smape"]
+            elif "Baseline Model" in scores_df.index:  # If only Baseline exists
+                model_for_tuning_name = "Baseline Model"
+                model_for_tuning_rmse = scores_df.loc["Baseline Model"]["rmse"]
+                model_for_tuning_mae = scores_df.loc["Baseline Model"]["mae"]
+                model_for_tuning_smape = scores_df.loc["Baseline Model"]["smape"]
+
             final_rmse = scores_df.loc["Final Model"]["rmse"]
-            winsorized_mae = scores_df.loc["Winsorized Model"]["mae"]
             final_mae = scores_df.loc["Final Model"]["mae"]
-            winsorized_smape = scores_df.loc["Winsorized Model"]["smape"]
             final_smape = scores_df.loc["Final Model"]["smape"]
 
-            if winsorized_rmse > 0 and winsorized_mae > 0 and winsorized_smape > 0:
+            if (
+                model_for_tuning_rmse > 0
+                and model_for_tuning_mae > 0
+                and model_for_tuning_smape > 0
+            ):
                 rmse_improvement_final = (
-                    (winsorized_rmse - final_rmse) / winsorized_rmse
+                    (model_for_tuning_rmse - final_rmse) / model_for_tuning_rmse
                 ) * 100
                 mae_improvement_final = (
-                    (winsorized_mae - final_mae) / winsorized_mae
+                    (model_for_tuning_mae - final_mae) / model_for_tuning_mae
                 ) * 100
                 smape_improvement_final = (
-                    (winsorized_smape - final_smape) / winsorized_smape
+                    (model_for_tuning_smape - final_smape) / model_for_tuning_smape
                 ) * 100
 
                 st.write(
-                    f"**Impact of Hyperparameter Tuning:** The Final Model, optimized through rigorous hyperparameter tuning, "
+                    f"**Impact of Hyperparameter Tuning:** The Final Model, optimized through rigorous hyperparameter tuning (based on the superior performance of the **{model_for_tuning_name}**), "
                     f"achieved further performance gains. We saw an additional **{rmse_improvement_final:.2f}% reduction in RMSE**, "
                     f"a **{mae_improvement_final:.2f}% reduction in MAE**, and a **{smape_improvement_final:.2f}% reduction in SMAPE** "
-                    "compared to the Winsorized Model. This fine-tuning process ensures the model precisely captures underlying patterns, "
+                    f"compared to the {model_for_tuning_name}. This fine-tuning process ensures the model precisely captures underlying patterns, "
                     "delivering highly accurate forecasts that directly translate into improved decision quality and reduced financial risk."
                 )
             else:
