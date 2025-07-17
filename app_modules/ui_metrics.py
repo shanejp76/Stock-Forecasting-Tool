@@ -34,7 +34,7 @@ def display_forecast_summary(forecast_df, data, selected_stock):
                     ) * 100
 
                     st.write(
-                        f"The forecast predicts the price of {selected_stock} will be **${forecast_price_val:.2f}** on **{forecast_date_str}**."
+                        f"The forecast predicts the price of {selected_stock} will be **\${forecast_price_val:.2f}** on **{forecast_date_str}**."
                     )
                     if trend_percentage_val >= 0:
                         st.write(
@@ -45,8 +45,9 @@ def display_forecast_summary(forecast_df, data, selected_stock):
                             f"This represents a **{trend_percentage_val:.2f}% decrease** from the last known price."
                         )
 
-                    third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **${confidence_lower_val:.2f}** and **${confidence_upper_val:.2f}**."
-                    st.text(third_line_text)
+                    third_line_text = f"With **{confidence_level}** confidence, the price is expected to be between **\${confidence_lower_val:.2f}** and **\${confidence_upper_val:.2f}**."
+                    st.markdown(third_line_text)
+
                 else:
                     st.warning(
                         f"Forecast for {target_day} days out is not available in the forecast data. Check forecast_period."
@@ -293,7 +294,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
             and "Final Model" in scores_df.index
         ):
             st.write(
-                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
+                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
             )
             st.write(
                 f"* **SMAPE (Symmetric Mean Absolute Percentage Error) KPI:** A SMAPE of **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** means that, on average, the model's predictions are **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** off from the actual values. This provides a normalized, business-friendly view of percentage accuracy."
@@ -302,7 +303,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
                 "* **MSE (Mean Squared Error) KPI:** This squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy. While less intuitive for direct business interpretation, it's a critical metric for model optimization."
             )
             st.write(
-                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
+                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
             )
         else:
             st.write(
