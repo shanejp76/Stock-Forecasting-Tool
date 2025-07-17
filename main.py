@@ -233,7 +233,7 @@ display_accuracy_metrics(scores_df)
 
 # --- UI: Business Intelligence KPIs ---
 # UPDATED CALL: Pass market_correlation to display_business_kpis
-display_business_kpis(forecast_df, data, volatility, market_correlation)
+display_business_kpis(forecast_df, data, stats, volatility, market_correlation)
 
 # --- UI: Model Iterations and Performance ---
 display_model_performance(scores_df, best_params_dict, selected_stock)

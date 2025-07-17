@@ -3,14 +3,16 @@ import streamlit as st
 import pandas as pd
 
 
-def display_business_kpis(forecast_df, data, volatility, market_correlation):
+# MODIFIED: Added 'stats' to the function arguments
+def display_business_kpis(forecast_df, data, stats, volatility, market_correlation):
     """
     Displays business intelligence KPIs.
 
     Args:
         forecast_df (pd.DataFrame): DataFrame containing the forecast data.
         data (pd.DataFrame): DataFrame containing the historical stock data.
-        volatility (float): Annualized volatility of the stock.
+        stats (dict): Dictionary containing various stock statistics, including 'Annualized Volatility' category.
+        volatility (float): Annualized numerical volatility of the stock.
         market_correlation (float or None): Correlation coefficient with a market index.
     """
     st.subheader("-- Business Intelligence KPIs --")
@@ -23,10 +25,6 @@ def display_business_kpis(forecast_df, data, volatility, market_correlation):
                 drop=True
             )
 
-            # Find the index where the forecast starts relative to actual data
-            # Ensure 'Date' column in forecast_df_sorted is datetime for comparison
-            # and that last_actual_date is also a datetime object.
-            # Convert last_actual_date to a pandas Timestamp if it's not already
             if isinstance(last_actual_date, (pd.Timestamp, pd.DatetimeIndex)):
                 comparison_date = last_actual_date
             else:
@@ -95,22 +93,13 @@ def display_business_kpis(forecast_df, data, volatility, market_correlation):
                     st.write("Volume data not available.")
 
                 st.markdown("### Volatility Assessment")
-                if volatility is not None:
-                    volatility_rank = "Not Available"
-                    if (
-                        volatility < 0.15
-                    ):  # Changed thresholds to align with common volatility ranges
-                        volatility_rank = "Low Volatility"
-                    elif 0.15 <= volatility < 0.30:
-                        volatility_rank = "Moderate Volatility"
-                    elif 0.30 <= volatility < 0.50:
-                        volatility_rank = "High Volatility"
-                    else:
-                        volatility_rank = "Very High Volatility"
+                if (
+                    volatility is not None and "Annualized Volatility" in stats
+                ):  # Check if stats contains the key
+                    # Use the pre-calculated rank from stats
+                    volatility_rank = stats["Annualized Volatility"]
 
-                    st.write(
-                        f"**Annualized Volatility:** {volatility:.2%}"
-                    )  # Display as percentage
+                    st.write(f"**Annualized Volatility:** {volatility:.2%}")
                     st.write(f"**Volatility Rank:** {volatility_rank}")
                     st.write(
                         "*(Higher volatility indicates greater price fluctuation risk and potential for larger daily swings.)*"
