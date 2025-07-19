@@ -306,7 +306,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 x=data_to_plot["Date"],
                 y=data_to_plot["MACD"],
                 mode="lines",
-                name="MACD",  # Name is still useful for hover, but won't appear in legend
+                name="MACD Line",  # Name is still useful for hover, but won't appear in legend
                 line=dict(color="blue", width=2),
                 showlegend=False,  # This trace will NOT appear in the legend
             ),
@@ -318,7 +318,7 @@ def plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
                 x=data_to_plot["Date"],
                 y=data_to_plot["MACD_Signal"],
                 mode="lines",
-                name="MACD Signal",  # Name is still useful for hover, but won't appear in legend
+                name="Signal Line",  # Name is still useful for hover, but won't appear in legend
                 line=dict(color="orange", width=1),
                 showlegend=False,  # This trace will NOT appear in the legend
             ),
