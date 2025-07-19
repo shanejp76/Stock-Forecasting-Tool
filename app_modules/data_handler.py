@@ -1,3 +1,24 @@
+"""
+Data Handler Module for Swing Ticker
+
+This module provides functions for loading, processing, and analyzing stock data.
+It includes utilities for fetching tickers, loading historical price data, calculating
+key statistics, and generating technical indicators such as SMA, Bollinger Bands, RSI,
+and MACD. It also determines appropriate training and forecast periods based on data
+length and volatility.
+
+Functions:
+    load_finnhub_tickers(finnhub_api_key, exchange_code): Loads ticker symbols from Finnhub API.
+    load_alpha_vantage_data(_ts_av, ticker): Loads daily stock data from Alpha Vantage.
+    process_stock_data(data, start_date): Filters and processes raw stock data.
+    calculate_stock_stats(data, selected_stock, price_col): Calculates key statistics and volatility.
+    process_technical_indicators(data, price_col): Adds technical indicators to the data.
+    determine_periods(data, volatility): Determines training and forecast periods.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/data_handler.py
 import streamlit as st
 import pandas as pd

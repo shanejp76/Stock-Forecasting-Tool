@@ -1,10 +1,33 @@
+"""
+Forecast Summary Module for Swing Ticker
+
+This module provides Streamlit UI components for displaying a concise summary
+of the 10-day stock price forecast. It calculates the predicted price, percentage
+change from the last known price, and confidence interval, helping users quickly
+interpret the forecast results.
+
+Functions:
+    display_forecast_summary(forecast_df, data, selected_stock):
+        Renders the 10-day forecast summary for the selected stock.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/forecast_summary.py
 import streamlit as st
 import pandas as pd
 
 
 def display_forecast_summary(forecast_df, data, selected_stock):
-    """Displays the 10-day forecast summary."""
+    """
+    Displays the 10-day forecast summary for the selected stock.
+
+    Args:
+        forecast_df (pd.DataFrame): DataFrame containing the forecast data.
+        data (pd.DataFrame): DataFrame containing the historical stock data.
+        selected_stock (str): The ticker symbol of the selected stock.
+    """
     if not forecast_df.empty:
         st.markdown("---")
         st.subheader(f"10-Day Forecast Summary for {selected_stock}")

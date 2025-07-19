@@ -1,3 +1,21 @@
+"""
+Performance Metrics Module for Swing Ticker
+
+This module provides Streamlit UI components for displaying model accuracy metrics
+and a narrative of model iterations and performance improvements. It summarizes
+key forecasting metrics (SMAPE, RMSE, MAE, MSE) and explains the impact of data
+preprocessing and hyperparameter tuning on predictive accuracy and business value.
+
+Functions:
+    display_accuracy_metrics(scores_df): Displays predicted accuracy metrics for the final model.
+    display_model_performance(scores_df, best_params_dict, selected_stock):
+        Displays model iterations, performance metrics, and business narrative.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
+# app_modules/performance_metrics.py
 import streamlit as st
 import pandas as pd
 

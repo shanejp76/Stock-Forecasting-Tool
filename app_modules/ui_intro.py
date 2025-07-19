@@ -1,3 +1,20 @@
+"""
+UI Intro Module for Swing Ticker
+
+This module provides Streamlit UI components for the introductory section of the app,
+including the welcome message and stock selection interface. It handles initial data
+loading, ticker lookup, and displays key statistics for the selected stock.
+
+Functions:
+    display_welcome_expander(): Displays the welcome message in an expander.
+    display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
+        Handles stock selection UI and loads initial data and statistics.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
+# app_module/ui_intro.py
 import streamlit as st
 import pandas as pd
 from alpha_vantage.timeseries import TimeSeries

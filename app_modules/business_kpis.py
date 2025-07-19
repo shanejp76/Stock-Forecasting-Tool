@@ -1,3 +1,20 @@
+"""
+Business KPIs Module for Swing Ticker
+
+This module provides Streamlit UI components for displaying business intelligence KPIs
+related to stock forecasts. It summarizes price movement forecasts, volume trends,
+volatility assessment, and market correlation, helping users interpret the forecast
+results in a business context.
+
+Functions:
+    display_business_kpis(forecast_df, data, stats, volatility, market_correlation):
+        Renders the business KPIs section, including price movement, volume, volatility,
+        and market correlation metrics.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/business_kpis.py
 import streamlit as st
 import pandas as pd

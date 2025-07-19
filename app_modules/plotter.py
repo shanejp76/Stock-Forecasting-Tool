@@ -1,3 +1,19 @@
+"""
+Plotter Module for Swing Ticker
+
+This module provides functions for visualizing stock price forecasts and technical indicators
+using Plotly and Streamlit. It generates interactive subplots for price, forecast, SMAs,
+Bollinger Bands, RSI, and MACD, allowing users to explore historical and predicted trends
+with business-relevant overlays.
+
+Functions:
+    plot_forecast(data_to_plot, ticker_name_for_plot, selected_stock_for_plot):
+        Plots the stock forecast, actual prices, and technical indicators in interactive subplots.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/plotter.py
 import streamlit as st
 import pandas as pd

@@ -1,3 +1,22 @@
+"""
+Swing Ticker Streamlit App
+
+This module serves as the main entry point for the Swing Ticker application.
+It loads API keys, fetches and processes stock data, applies forecasting models,
+calculates technical indicators and market correlation, and displays results
+and business KPIs through an interactive Streamlit UI.
+
+Modules imported:
+- Data handling and technical indicators
+- Model training and evaluation
+- Forecast plotting
+- UI components and business KPIs
+- Market correlation analysis
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # main.py
 import streamlit as st
 import pandas as pd
@@ -9,12 +28,7 @@ import itertools
 
 # Import functions from our new modules from the 'app_modules' package
 from app_modules.data_handler import (
-    load_finnhub_tickers,
-    load_alpha_vantage_data,
-    process_stock_data,
-    calculate_stock_stats,
     process_technical_indicators,
-    determine_periods,
 )
 from app_modules.model_trainer import (
     dynamic_winsorize,

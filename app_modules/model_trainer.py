@@ -1,3 +1,25 @@
+"""
+Model Trainer Module for Swing Ticker
+
+This module provides functions for data preprocessing, model training, hyperparameter tuning,
+and forecast summary generation using the Prophet library. It includes dynamic winsorization,
+draft model training for baseline comparison, and final model selection based on cross-validation
+performance. The module also prepares concise forecast summaries for business reporting.
+
+Functions:
+    dynamic_winsorize(df, column, window_size=30, percentiles=(0.05, 0.95)):
+        Applies dynamic winsorization to a specified column in a DataFrame.
+    model_drafts(df_train_input, scores_df_input, price_col, _cv_func):
+        Trains baseline and winsorized Prophet models and calculates their performance metrics.
+    prepare_forecast_summary(forecast_df, df_train_input, n_days_out):
+        Calculates key forecast summary values for a specific number of days out.
+    tune_and_train_final_model(df_train_input, all_params, forecast_period, scores_df_input, _cv_func, summary_n_days_out=None):
+        Tunes hyperparameters, trains the final Prophet model, generates a forecast, and prepares summary data.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/model_trainer.py
 import streamlit as st
 import pandas as pd

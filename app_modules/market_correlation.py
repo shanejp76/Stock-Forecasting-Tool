@@ -1,3 +1,19 @@
+"""
+Market Correlation Module for Swing Ticker
+
+This module provides functionality to calculate the correlation between a selected stock
+and a market index (e.g., S&P 500) using historical price data. It helps users assess
+how closely the stock's movements align with the broader market, which is useful for
+risk management and portfolio diversification analysis.
+
+Functions:
+    calculate_market_correlation(_ts_av, stock_data, market_ticker="SPY"):
+        Calculates the correlation coefficient between the selected stock and the market index.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 # app_modules/market_correlation.py
 import pandas as pd
 import numpy as np

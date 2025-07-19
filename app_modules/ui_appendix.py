@@ -1,4 +1,19 @@
-# app_modules/ui_appendix.py
+"""
+UI Appendix Module for Swing Ticker
+
+This module provides Streamlit UI components for displaying the appendix section
+of the Swing Ticker application. It includes expandable sections for the ticker list,
+forecast components, forecast grid, and filtered raw data, offering users additional
+context and transparency about the forecasting process and underlying data.
+
+Functions:
+    display_appendix(tickers_data, m, forecast, data): Renders the appendix section
+        with ticker list, forecast components, forecast grid, and filtered raw data.
+
+Author: Shane
+Created: 2024-12-04
+"""
+
 import streamlit as st
 import pandas as pd
 
