@@ -57,6 +57,7 @@ o	Rmse- prediction error can be off by as much as $32 in some cases.
 o	Smape/Mae- on average, prediction is off by about 4.5% or $26 (MAE) from the actual values.
 •	Confidence in Forecast for this Stock (Low/Medium/High): (Based on observed accuracy and historical fit)
 o	Based on visual historical analysis, we can observe a strong fit between the model and actual price. However, around early Feb 2025, I noticed a significant departure from forecasted path. The actual price and forecast trended downward in parallel until the forecast resumed the preexisting trend. The actual price has since been fairly unpredictable. The forecast appears to predict a fairly smooth upward movement, while the actual price is exhibiting a lot of volatility. They do not match up. I believe that the forecast DOES indicate an upward trend and I believe that is accurate. The actual price is not staying within the boundaries of the forecast, so I wouldn’t consider the forecast itself to be truth. In summary, the historical fit is extremely accurate, but the actual price has been darting around outside the forecast. I would agree with te forecast trend but not the price. 
+    - i have made edits to the interactable components of teh UI than let me control params. 
 ________________________________________
 IV. Technical Indicators Analysis
 •	Screenshot: (Insert screenshot of "Technical Indicators" plot from Streamlit UI)

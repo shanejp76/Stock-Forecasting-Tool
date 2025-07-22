@@ -279,7 +279,7 @@ def determine_periods(data, volatility, user_training_days=None):
         max_available_days = len(data)
         if train_period > max_available_days:
             train_period = max_available_days
-            
+
         # Ensure these are always integers before being passed around
         period_unit = int(period_unit)
         forecast_period = int(forecast_period)

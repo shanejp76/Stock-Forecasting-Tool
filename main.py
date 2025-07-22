@@ -114,16 +114,22 @@ def run_cross_validation(model_name):
     try:
         # Balanced CV: 2-4 folds maximum for performance
         available_data = len(df_train)
-        
+
         # Use training period as initial, but ensure we have enough data for multiple folds
-        cv_initial = min(train_period, int(available_data * 0.5))  # Max 50% of data for initial
-        
+        cv_initial = min(
+            train_period, int(available_data * 0.5)
+        )  # Max 50% of data for initial
+
         # Use period that gives us 2-3 folds maximum
-        cv_period = max(period_unit, int((available_data - cv_initial) / 3))  # Divide remaining data into ~3 folds
-        
+        cv_period = max(
+            period_unit, int((available_data - cv_initial) / 3)
+        )  # Divide remaining data into ~3 folds
+
         # Horizon should be reasonable for stock prediction (7-30 days)
-        cv_horizon = min(forecast_period, 30, int(available_data * 0.1))  # Max 30 days or 10% of data
-        
+        cv_horizon = min(
+            forecast_period, 30, int(available_data * 0.1)
+        )  # Max 30 days or 10% of data
+
         return cross_validation(
             model_name,
             initial=f"{cv_initial} days",
@@ -178,7 +184,7 @@ if not df_train.empty and len(df_train) > 0:
     scores_df = model_drafts(
         df_train, scores_df, price_col, _cv_func=run_cross_validation
     )
-    
+
     # Step 2: Compare models and select best data preparation approach
     status_placeholder.info("Step 2/3: Comparing baseline vs winsorized models...")
     if len(scores_df) >= 2:
@@ -194,10 +200,12 @@ if not df_train.empty and len(df_train) > 0:
         )
         df_train = df_train.rename(columns={price_col: "y"})
         chosen_approach = "raw data (fallback)"
-    
+
     # Step 3: Train final model with hyperparameter tuning
-    status_placeholder.info(f"Step 3/3: Training final model using {chosen_approach}...")
-    
+    status_placeholder.info(
+        f"Step 3/3: Training final model using {chosen_approach}..."
+    )
+
     m, scores_df, forecast, best_params_dict, forecast_summary = (
         tune_and_train_final_model(
             df_train,
@@ -208,9 +216,11 @@ if not df_train.empty and len(df_train) > 0:
             summary_n_days_out=forecast_period,
         )
     )
-    
+
     if m is not None and not forecast.empty:
-        status_placeholder.success(f"All models trained successfully! Final model uses {chosen_approach}.")
+        status_placeholder.success(
+            f"All models trained successfully! Final model uses {chosen_approach}."
+        )
     else:
         status_placeholder.error("Error: Model object or forecast is empty")
         st.stop()
@@ -224,7 +234,7 @@ if not forecast.empty and not data.empty:
     # Use the minimum of training period and available data
     actual_display_days = min(train_period, len(data))
     display_data = data[-actual_display_days:]
-    
+
     forecast_df = pd.merge(
         left=display_data, right=forecast, right_on="ds", left_on="Date", how="right"
     )[

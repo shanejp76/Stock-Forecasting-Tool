@@ -141,7 +141,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
 
         # --- Model Configuration ---
         st.markdown("**-- Model Configuration --**")
-        
+
         # Training Duration Slider (moved to bottom of section)
         training_days = st.slider(
             "Training Data Duration (Trading Days)",
@@ -149,35 +149,42 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             max_value=500,  # ~2 years of trading days
             value=500,  # Default to maximum available
             step=25,
-            help="Select the number of trading days (excluding weekends/holidays) for model training. ~250 trading days = 1 year, ~500 trading days = 2 years. More data may improve accuracy but increase processing time."
+            help="Select the number of trading days (excluding weekends/holidays) for model training. ~250 trading days = 1 year, ~500 trading days = 2 years. More data may improve accuracy but increase processing time.",
         )
-        
+
         # Parameter Controls (simplified sliders)
         trend_flexibility = st.slider(
             "Trend Flexibility",
             min_value=1,
             max_value=10,
             value=5,  # Maps to 0.1 (the default)
-            help="How quickly the model adapts to trend changes. Lower = more conservative, Higher = more responsive to changes"
+            help="How quickly the model adapts to trend changes. Lower = more conservative, Higher = more responsive to changes",
         )
-        
+
         seasonality_strength = st.slider(
-            "Seasonality Strength", 
+            "Seasonality Strength",
             min_value=1,
             max_value=10,
             value=5,  # Maps to 1.0 (the default)
-            help="How much seasonal variation the model captures. Lower = smoother patterns, Higher = more pronounced seasonal effects"
+            help="How much seasonal variation the model captures. Lower = smoother patterns, Higher = more pronounced seasonal effects",
         )
-        
+
         # Convert simple 1-10 scale to log scale parameters
         # Changepoint: 1->0.001, 5->0.1, 10->0.5 (logarithmic mapping)
-        changepoint_prior = np.exp(np.log(0.001) + (trend_flexibility - 1) * (np.log(0.5) - np.log(0.001)) / 9)
-        
-        # Seasonality: 1->0.01, 5->1.0, 10->10.0 (logarithmic mapping) 
-        seasonality_prior = np.exp(np.log(0.01) + (seasonality_strength - 1) * (np.log(10.0) - np.log(0.01)) / 9)
+        changepoint_prior = np.exp(
+            np.log(0.001) + (trend_flexibility - 1) * (np.log(0.5) - np.log(0.001)) / 9
+        )
+
+        # Seasonality: 1->0.01, 5->1.0, 10->10.0 (logarithmic mapping)
+        seasonality_prior = np.exp(
+            np.log(0.01)
+            + (seasonality_strength - 1) * (np.log(10.0) - np.log(0.01)) / 9
+        )
 
         # Determine training and forecast periods
-        period_unit, forecast_period, train_period = determine_periods(data, volatility, training_days)
+        period_unit, forecast_period, train_period = determine_periods(
+            data, volatility, training_days
+        )
 
     return (
         selected_stock,
