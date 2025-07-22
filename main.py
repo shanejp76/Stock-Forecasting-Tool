@@ -105,9 +105,7 @@ df_train = df_train.rename(columns={"Date": "ds"})
 if train_period <= len(df_train):
     df_train = df_train[-train_period:]
 else:
-    st.warning(
-        f"Training period ({train_period}) is larger than available data ({len(df_train)}). Adjusting training period to available data length."
-    )
+    # Silently adjust training period to available data length
     df_train = df_train
 
 
@@ -142,37 +140,11 @@ def run_cross_validation(model_name):
 # Get metrics for baseline & winsorized models
 scores_df = pd.DataFrame(columns=["mse", "rmse", "mae", "smape"])
 
-data_load_state = st.text(
-    "-- Please wait while the Baseline & Winsorized models train... --"
-)
-if not df_train.empty and len(df_train) > 0:
-    scores_df = model_drafts(
-        df_train, scores_df, price_col, _cv_func=run_cross_validation
-    )
-    data_load_state.text("-- Baseline & Winsorized models Trained. --")
-else:
-    data_load_state.text("-- Error in training models: Training data is empty. --")
-    st.stop()
-
-if len(scores_df) >= 2:
-    if scores_df.iloc[0]["rmse"] < scores_df.iloc[1]["rmse"]:
-        df_train = df_train.rename(columns={price_col: "y"})
-    else:
-        df_train = df_train.rename(columns={"winsorized": "y"})
-else:
-    st.warning(
-        "Not enough model drafts for comparison. Using raw 'Adjusted Close' as target for final model."
-    )
-    df_train = df_train.rename(columns={price_col: "y"})
-
-data_load_state = st.text("-- Please wait while the Final Model trains... --")
-
 # Check if user has modified parameters from defaults (slider position 5 = automated)
 user_modified_params = (trend_flexibility != 5) or (seasonality_strength != 5)
 
 if user_modified_params:
-    # Use user-selected parameters (no grid search)
-    st.info("Using your custom parameters. Skipping automated optimization.")
+    optimization_mode = "Using your custom parameters. Skipping automated optimization."
     all_params = [
         {
             "changepoint_prior_scale": changepoint_prior,
@@ -180,8 +152,7 @@ if user_modified_params:
         }
     ]
 else:
-    # Use automated grid search optimization (DEFAULT BEHAVIOR)
-    st.info("Running automated parameter optimization.")
+    optimization_mode = "Running automated parameter optimization."
     param_grid = {
         "changepoint_prior_scale": [0.001, 0.01, 0.1, 0.5],
         "seasonality_prior_scale": [0.01, 0.1, 1.0, 10.0],
@@ -198,7 +169,35 @@ m, scores_df, forecast, best_params_dict, forecast_summary = (
     "",
 )
 
+# Create a placeholder for progressive status updates
+status_placeholder = st.empty()
+
+# Step 1: Train baseline and winsorized models
+status_placeholder.info(f"Step 1/3: Training baseline models... ({optimization_mode})")
 if not df_train.empty and len(df_train) > 0:
+    scores_df = model_drafts(
+        df_train, scores_df, price_col, _cv_func=run_cross_validation
+    )
+    
+    # Step 2: Compare models and select best data preparation approach
+    status_placeholder.info("Step 2/3: Comparing baseline vs winsorized models...")
+    if len(scores_df) >= 2:
+        if scores_df.iloc[0]["rmse"] < scores_df.iloc[1]["rmse"]:
+            df_train = df_train.rename(columns={price_col: "y"})
+            chosen_approach = "raw data"
+        else:
+            df_train = df_train.rename(columns={"winsorized": "y"})
+            chosen_approach = "winsorized data"
+    else:
+        st.warning(
+            "Not enough model drafts for comparison. Using raw 'Adjusted Close' as target for final model."
+        )
+        df_train = df_train.rename(columns={price_col: "y"})
+        chosen_approach = "raw data (fallback)"
+    
+    # Step 3: Train final model with hyperparameter tuning
+    status_placeholder.info(f"Step 3/3: Training final model using {chosen_approach}...")
+    
     m, scores_df, forecast, best_params_dict, forecast_summary = (
         tune_and_train_final_model(
             df_train,
@@ -209,15 +208,14 @@ if not df_train.empty and len(df_train) > 0:
             summary_n_days_out=forecast_period,
         )
     )
+    
     if m is not None and not forecast.empty:
-        data_load_state.text("-- Final Model Trained. --")
+        status_placeholder.success(f"All models trained successfully! Final model uses {chosen_approach}.")
     else:
-        data_load_state.text(
-            "-- Error in training final model: Model object or forecast is empty. --"
-        )
+        status_placeholder.error("Error: Model object or forecast is empty")
         st.stop()
 else:
-    data_load_state.text("-- Error in training final model: Training data is empty. --")
+    status_placeholder.error("Error: Training data is empty")
     st.stop()
 
 # Merge entire forecast w actual data & indicators
@@ -253,15 +251,12 @@ if not forecast.empty and not data.empty:
     ]
     forecast_df.rename(columns={"ds": "Date"}, inplace=True)
 else:
-    st.error("Cannot merge forecast: forecast or data is empty.")
-    st.stop()
+    st.stop()  # Stop execution if forecast merge fails
 
 # Get metrics
 if len(scores_df) >= 3:
     scores_df.index = ["Baseline Model", "Winsorized Model", "Final Model"]
     scores_df = scores_df.reindex(sorted(scores_df.columns), axis=1)
-else:
-    st.warning("Not enough model scores for comparison. Displaying available scores.")
 
 # NEW STEP: Calculate Market Correlation
 market_correlation = None
@@ -269,8 +264,6 @@ if not data.empty:
     with st.spinner("Calculating market correlation..."):
         # Pass the _ts_av object (which is the TimeSeries client) and the stock's data
         market_correlation = calculate_market_correlation(ts_av, data.copy())
-else:
-    st.warning("Stock data is empty, skipping market correlation calculation.")
 
 
 # --- Calling plot_forecast ---
