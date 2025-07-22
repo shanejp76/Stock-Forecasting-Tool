@@ -82,6 +82,10 @@ display_welcome_expander()
     forecast_period,
     train_period,
     tickers_data,
+    trend_flexibility,
+    seasonality_strength,
+    changepoint_prior,
+    seasonality_prior,
 ) = display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av)
 
 # --- Process Technical Indicators ---
@@ -110,11 +114,23 @@ else:
 # Lambda function for cross validation metrics
 def run_cross_validation(model_name):
     try:
+        # Balanced CV: 2-4 folds maximum for performance
+        available_data = len(df_train)
+        
+        # Use training period as initial, but ensure we have enough data for multiple folds
+        cv_initial = min(train_period, int(available_data * 0.5))  # Max 50% of data for initial
+        
+        # Use period that gives us 2-3 folds maximum
+        cv_period = max(period_unit, int((available_data - cv_initial) / 3))  # Divide remaining data into ~3 folds
+        
+        # Horizon should be reasonable for stock prediction (7-30 days)
+        cv_horizon = min(forecast_period, 30, int(available_data * 0.1))  # Max 30 days or 10% of data
+        
         return cross_validation(
             model_name,
-            initial=f"{train_period} days",
-            period=f"{period_unit} days",
-            horizon=f"{forecast_period} days",
+            initial=f"{cv_initial} days",
+            period=f"{cv_period} days",
+            horizon=f"{cv_horizon} days",
         )
     except ValueError as e:
         st.warning(
@@ -149,15 +165,31 @@ else:
     )
     df_train = df_train.rename(columns={price_col: "y"})
 
-param_grid = {
-    "changepoint_prior_scale": [0.001, 0.01, 0.1, 0.5],
-    "seasonality_prior_scale": [0.01, 0.1, 1.0, 10.0],
-}
-all_params = [
-    dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())
-]
-
 data_load_state = st.text("-- Please wait while the Final Model trains... --")
+
+# Check if user has modified parameters from defaults (slider position 5 = automated)
+user_modified_params = (trend_flexibility != 5) or (seasonality_strength != 5)
+
+if user_modified_params:
+    # Use user-selected parameters (no grid search)
+    st.info("Using your custom parameters. Skipping automated optimization.")
+    all_params = [
+        {
+            "changepoint_prior_scale": changepoint_prior,
+            "seasonality_prior_scale": seasonality_prior,
+        }
+    ]
+else:
+    # Use automated grid search optimization (DEFAULT BEHAVIOR)
+    st.info("Running automated parameter optimization.")
+    param_grid = {
+        "changepoint_prior_scale": [0.001, 0.01, 0.1, 0.5],
+        "seasonality_prior_scale": [0.01, 0.1, 1.0, 10.0],
+    }
+    all_params = [
+        dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())
+    ]
+
 m, scores_df, forecast, best_params_dict, forecast_summary = (
     None,
     scores_df,
@@ -190,8 +222,13 @@ else:
 
 # Merge entire forecast w actual data & indicators
 if not forecast.empty and not data.empty:
+    # Limit historical data to match training period for visual consistency
+    # Use the minimum of training period and available data
+    actual_display_days = min(train_period, len(data))
+    display_data = data[-actual_display_days:]
+    
     forecast_df = pd.merge(
-        left=data, right=forecast, right_on="ds", left_on="Date", how="right"
+        left=display_data, right=forecast, right_on="ds", left_on="Date", how="right"
     )[
         [
             "ds",

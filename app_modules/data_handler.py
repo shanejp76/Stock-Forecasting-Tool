@@ -13,7 +13,7 @@ Functions:
     process_stock_data(data, start_date): Filters and processes raw stock data.
     calculate_stock_stats(data, selected_stock, price_col): Calculates key statistics and volatility.
     process_technical_indicators(data, price_col): Adds technical indicators to the data.
-    determine_periods(data, volatility): Determines training and forecast periods.
+    determine_periods(data, volatility, user_training_days=None): Determines training and forecast periods.
 
 Author: Shane
 Created: 2024-12-04
@@ -251,23 +251,35 @@ def process_technical_indicators(data, price_col):
     return data
 
 
-def determine_periods(data, volatility):
+def determine_periods(data, volatility, user_training_days=None):
     """
     Determines training and forecast periods based on stock data length and volatility.
+    If user_training_days is provided, uses that value instead of automatic calculation.
     """
     if not data.empty:
         data_len_years = len(data) / 365
         if data_len_years < 2:
             period_unit = int(len(data) / 4)
             forecast_period = period_unit
-            train_period = len(data)  # Train on all available data
+            # Use user-defined training days if provided, otherwise use all available data
+            train_period = user_training_days if user_training_days else len(data)
         else:
             period_unit = 365
             forecast_period = period_unit
-            train_period = (
-                forecast_period * 4 if volatility < 0.6 else forecast_period * 8
-            )
+            if user_training_days:
+                # Use user-defined training days
+                train_period = user_training_days
+            else:
+                # Use automatic calculation based on volatility
+                train_period = (
+                    forecast_period * 4 if volatility < 0.6 else forecast_period * 8
+                )
 
+        # Ensure train_period doesn't exceed available data
+        max_available_days = len(data)
+        if train_period > max_available_days:
+            train_period = max_available_days
+            
         # Ensure these are always integers before being passed around
         period_unit = int(period_unit)
         forecast_period = int(forecast_period)

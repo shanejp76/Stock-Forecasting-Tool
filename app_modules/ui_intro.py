@@ -17,6 +17,7 @@ Created: 2024-12-04
 # app_module/ui_intro.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 from alpha_vantage.timeseries import TimeSeries
 from datetime import date, timedelta
 
@@ -138,8 +139,45 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
         else:
             st.warning("Stock statistics are not available.")
 
+        # --- Model Configuration ---
+        st.markdown("**-- Model Configuration --**")
+        
+        # Training Duration Slider (moved to bottom of section)
+        training_days = st.slider(
+            "Training Data Duration (Trading Days)",
+            min_value=30,
+            max_value=500,  # ~2 years of trading days
+            value=500,  # Default to maximum available
+            step=25,
+            help="Select the number of trading days (excluding weekends/holidays) for model training. ~250 trading days = 1 year, ~500 trading days = 2 years. More data may improve accuracy but increase processing time."
+        )
+        
+        # Parameter Controls (simplified sliders)
+        trend_flexibility = st.slider(
+            "Trend Flexibility",
+            min_value=1,
+            max_value=10,
+            value=5,  # Maps to 0.1 (the default)
+            help="How quickly the model adapts to trend changes. Lower = more conservative, Higher = more responsive to changes"
+        )
+        
+        seasonality_strength = st.slider(
+            "Seasonality Strength", 
+            min_value=1,
+            max_value=10,
+            value=5,  # Maps to 1.0 (the default)
+            help="How much seasonal variation the model captures. Lower = smoother patterns, Higher = more pronounced seasonal effects"
+        )
+        
+        # Convert simple 1-10 scale to log scale parameters
+        # Changepoint: 1->0.001, 5->0.1, 10->0.5 (logarithmic mapping)
+        changepoint_prior = np.exp(np.log(0.001) + (trend_flexibility - 1) * (np.log(0.5) - np.log(0.001)) / 9)
+        
+        # Seasonality: 1->0.01, 5->1.0, 10->10.0 (logarithmic mapping) 
+        seasonality_prior = np.exp(np.log(0.01) + (seasonality_strength - 1) * (np.log(10.0) - np.log(0.01)) / 9)
+
         # Determine training and forecast periods
-        period_unit, forecast_period, train_period = determine_periods(data, volatility)
+        period_unit, forecast_period, train_period = determine_periods(data, volatility, training_days)
 
     return (
         selected_stock,
@@ -152,4 +190,8 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
         forecast_period,
         train_period,
         tickers_data,
+        trend_flexibility,
+        seasonality_strength,
+        changepoint_prior,
+        seasonality_prior,
     )

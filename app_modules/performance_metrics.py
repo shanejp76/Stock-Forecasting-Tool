@@ -225,7 +225,21 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
         * **Adaptive Training Data:** The size of the training dataset is dynamically adjusted based on the stock's volatility and available data. This ensures the model is trained on the most relevant historical period, which is crucial for **maintaining forecast agility and relevance in fluctuating market conditions.**
         * **Hyperparameter Tuning:** Through a cross-validated grid search, key model parameters (changepoint_prior_scale and seasonality_prior_scale) are systematically optimized. This process ensures the model learns the underlying patterns most effectively, leading to **highly accurate forecasts that directly translate into improved decision quality and reduced financial risk.**
 
-        **Data Preparation:** Before modeling, careful data preparation steps were undertaken. While the raw data from our source (Alpaca) is robust and guarantees cleanliness, I performed essential transformations such as date alignment, feature engineering (e.g., adding technical indicators), and dynamic winsorization to prepare the data optimally for the Prophet model.
+        **-- Model Configuration Options --**
+
+        **Training Data Duration:** Users can control the amount of historical trading data used to train the forecasting model. The data consists of **trading days only** (excluding weekends and market holidays) - approximately 250 trading days per calendar year. More data generally improves accuracy by capturing longer-term patterns and trends, but increases processing time. However, more data can also lead to **model drift** - where the model becomes less sensitive to recent market changes and trends because it's heavily weighted toward older, potentially irrelevant data. The default setting uses all available data (~500 trading days ≈ 2 years) to provide comprehensive learning while maintaining relevance.
+
+        *Monitor for model drift by checking if the forecast confidence intervals contain recent actual prices and whether the model captures recent trend changes. If the model seems disconnected from recent market behavior, try reducing the training duration.*
+
+        **Hyperparameter Control:** While the system automatically finds optimal hyperparameters by default, users can override this automation for experimentation:
+
+        - **Changepoint Prior Scale**: Controls how flexible the model is to trend changes. Lower values create smoother, more conservative trends, while higher values allow the model to detect and adapt to more frequent trend shifts.
+
+        - **Seasonality Prior Scale**: Controls how much seasonal variation the model captures. Lower values produce smoother seasonal patterns, while higher values allow for more volatile and pronounced seasonal effects.
+
+        *Note: Modifying hyperparameter values will disable automatic optimization and use your custom settings directly, which can be useful for testing specific scenarios or when you have domain expertise about the stock's behavior.*
+
+        **Data Preparation:** Before modeling, careful data preparation steps were undertaken. While the raw data from our source (Alpha Vantage) is robust and guarantees cleanliness, I performed essential transformations such as date alignment, feature engineering (e.g., adding technical indicators), and dynamic winsorization to prepare the data optimally for the Prophet model.
 
         By combining these refinements with a cross-validated grid search, this application provides a robust forecasting tool.
 
