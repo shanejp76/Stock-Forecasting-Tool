@@ -8,7 +8,7 @@ preprocessing and hyperparameter tuning on predictive accuracy and business valu
 
 Functions:
     display_accuracy_metrics(scores_df): Displays predicted accuracy metrics for the final model.
-    display_model_performance(scores_df, best_params_dict, selected_stock):
+    display_model_performance(scores_df, best_params_dict, selected_stock, user_modified_params=False):
         Displays model iterations, performance metrics, and business narrative.
 
 Author: Shane
@@ -38,7 +38,7 @@ def display_accuracy_metrics(scores_df):
         )
 
 
-def display_model_performance(scores_df, best_params_dict, selected_stock):
+def display_model_performance(scores_df, best_params_dict, selected_stock, user_modified_params=False):
     """Displays model iterations and performance narrative."""
     st.subheader("-- Model Iterations and Performance (Narrative & KPIs) --")
     with st.expander("Click here to expand"):
@@ -187,7 +187,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
             and "Final Model" in scores_df.index
         ):
             st.write(
-                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
+                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **\\${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **\\${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
             )
             st.write(
                 f"* **SMAPE (Symmetric Mean Absolute Percentage Error) KPI:** A SMAPE of **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** means that, on average, the model's predictions are **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** off from the actual values. This provides a normalized, business-friendly view of percentage accuracy."
@@ -196,7 +196,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
                 "* **MSE (Mean Squared Error) KPI:** This squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy. While less intuitive for direct business interpretation, it's a critical metric for model optimization."
             )
             st.write(
-                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
+                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **\\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **\\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
             )
         else:
             st.write(
@@ -223,7 +223,15 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
         Key Model Enhancements chosen for their impact on decision-making:
         * **Winsorization:** This technique was applied to improve the model's robustness against extreme price fluctuations (outliers). By mitigating the impact of unusual data points, the model generates **more stable and reliable predictions, reducing noise and leading to more confident trading decisions.** The thresholds are dynamically adjusted based on the stock's volatility to ensure relevance.
         * **Adaptive Training Data:** The size of the training dataset is dynamically adjusted based on the stock's volatility and available data. This ensures the model is trained on the most relevant historical period, which is crucial for **maintaining forecast agility and relevance in fluctuating market conditions.**
-        * **Hyperparameter Tuning:** Through a cross-validated grid search, key model parameters (changepoint_prior_scale and seasonality_prior_scale) are systematically optimized. This process ensures the model learns the underlying patterns most effectively, leading to **highly accurate forecasts that directly translate into improved decision quality and reduced financial risk.**
+        """
+        
+        # Add conditional parameter description
+        if user_modified_params:
+            about_str += """* **Custom Parameter Usage:** This model uses your manually specified parameter values instead of automated optimization. The changepoint_prior_scale and seasonality_prior_scale values are set according to your Trend Flexibility and Seasonality Strength slider settings, allowing you to test specific scenarios or apply domain expertise about the stock's behavior."""
+        else:
+            about_str += """* **Hyperparameter Tuning:** Through a cross-validated grid search, key model parameters (changepoint_prior_scale and seasonality_prior_scale) are systematically optimized. This process ensures the model learns the underlying patterns most effectively, leading to **highly accurate forecasts that directly translate into improved decision quality and reduced financial risk.**"""
+        
+        about_str += """
 
         **-- Model Configuration Options --**
 
@@ -245,9 +253,15 @@ def display_model_performance(scores_df, best_params_dict, selected_stock):
 
         """
         if best_params_dict:
-            about_str += f"For '{selected_stock}', optimal values are: changepoint_prior_scale: {best_params_dict['changepoint_prior_scale']:.3f}, seasonality_prior_scale: {best_params_dict['seasonality_prior_scale']:.3f}.\n\n"
+            if user_modified_params:
+                about_str += f"For '{selected_stock}', user-defined values are: changepoint_prior_scale: {best_params_dict['changepoint_prior_scale']:.3f}, seasonality_prior_scale: {best_params_dict['seasonality_prior_scale']:.3f}.\n\n"
+            else:
+                about_str += f"For '{selected_stock}', optimal values are: changepoint_prior_scale: {best_params_dict['changepoint_prior_scale']:.3f}, seasonality_prior_scale: {best_params_dict['seasonality_prior_scale']:.3f}.\n\n"
         else:
-            about_str += "Optimal hyperparameters could not be determined.\n\n"
+            if user_modified_params:
+                about_str += "User-defined hyperparameters could not be determined.\n\n"
+            else:
+                about_str += "Optimal hyperparameters could not be determined.\n\n"
 
         about_str += """
         **Cross-validation is paramount to ensuring the model's generalizability and reliability**, directly translating to **trustworthiness in business insights**. By rigorously evaluating the model's performance on multiple, unseen subsets of the data during the grid search, we can select hyperparameters that are not overfitted to a specific dataset. This robust validation process ensures that the model performs consistently on new data, providing a dependable foundation for trading decisions and strategic planning. Check out Model Iterations in the More Metrics section (above) to observe the model's improvement over its learning cycles.
