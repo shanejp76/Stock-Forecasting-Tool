@@ -307,7 +307,7 @@ display_accuracy_metrics(scores_df)
 display_business_kpis(forecast_df, data, stats, volatility, market_correlation)
 
 # --- UI: Model Iterations and Performance ---
-display_model_performance(scores_df, best_params_dict, selected_stock)
+display_model_performance(scores_df, best_params_dict, selected_stock, user_modified_params)
 
 # --- UI: Appendix ---
 display_appendix(tickers_data, m, forecast, data)

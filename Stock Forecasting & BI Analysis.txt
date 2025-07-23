@@ -27,7 +27,7 @@ o	Context for Correlation: Allows you to assess how individual stocks perform re
 o	Demonstrates Robustness: Shows your model's capability to forecast major market movements.
 o	Strategic Insights: Offers higher-level insights for overall trading strategy, complementing individual stock analysis.
 •	Date Range of Analysis in App: (e.g., "Forecast for next 7 days based on data up to [Date]")
-o	Forecast for next 10 days based on data up from July 20, 2023 to July 17, 2025.
+o	Forecast for next 10 days based on data up from July 17, 2023 to July 22, 2025.
 ________________________________________
 II. Forecast Summary & Interpretation
 •	Screenshot: (Insert screenshot of "Forecast Summary and Visualizations" section from Streamlit UI)
@@ -36,28 +36,29 @@ o
 o	Predicted Direction (Up/Down/Sideways):
 	4.51% down from current position in the next 10 days, but upward trend overall. 
 o	Predicted Price Range (High/Low for forecast period):
-	Between $585.74 and $614.44. 
+	Between $630.52 and $644.61. 
 o	Key observations from the forecast plot (e.g., trend, confidence intervals, significant predicted changes).
 	Trend. Market is said t oincrease 13% yoy. Average daily percent change says +0.07%. SMAs 20, 50, and 200 point to upward trend. 
 	Rsi: scraping the red dashed overbought line at 69. Strong indicator that price will go down
-	Macd: bearish crossover. Weak histogram. Macd line is at 8.24 while signal line is at 8.62. 
-	Model accuracy at 95.49% at 80% confidence level.
+	Macd: bearish crossover. Weak histogram. Macd line is at 8.24 while signal line is at 8.62. says price will go down.
+	Model accuracy at 99.74% at 80% confidence level.
 	Golden cross on July 1 at $617
 •	Any notable historical events visible in the forecast plot (if applicable)? (e.g., sudden drops/spikes)
+    significant drop Feb 2025.
 ________________________________________
 III. Model Performance & Accuracy (from your application)
 •	Screenshot: (Insert screenshot of "Accuracy Metrics and Model Performance Narrative" section)
 o	 
 •	Key Accuracy Metric(s) from App (e.g., SMAPE):
-o	0.0451
+o	0.0026
 •	How does the model performance for this specific stock compare to the median SMAPE (15%)?
-o	10% better performance!
+o	15% better performance! Almost 100%
 •	Narrative Summary from App: (Summarize the app's performance narrative for this stock)
-o	Rmse- prediction error can be off by as much as $32 in some cases.
-o	Smape/Mae- on average, prediction is off by about 4.5% or $26 (MAE) from the actual values.
+o	Rmse- prediction error can be off by as much as $24 in some cases.
+o	Smape/Mae- on average, prediction is off by about 0.26% or $1.62 (MAE) from the actual values.
 •	Confidence in Forecast for this Stock (Low/Medium/High): (Based on observed accuracy and historical fit)
 o	Based on visual historical analysis, we can observe a strong fit between the model and actual price. However, around early Feb 2025, I noticed a significant departure from forecasted path. The actual price and forecast trended downward in parallel until the forecast resumed the preexisting trend. The actual price has since been fairly unpredictable. The forecast appears to predict a fairly smooth upward movement, while the actual price is exhibiting a lot of volatility. They do not match up. I believe that the forecast DOES indicate an upward trend and I believe that is accurate. The actual price is not staying within the boundaries of the forecast, so I wouldn’t consider the forecast itself to be truth. In summary, the historical fit is extremely accurate, but the actual price has been darting around outside the forecast. I would agree with te forecast trend but not the price. 
-    - i have made edits to the interactable components of teh UI than let me control params. 
+    - i have made edits to the interactable components of teh UI than let me control params. I set the data duration for 130 days, trend flexibility at 7, and left seasonal strength at 5. the goal was not improve accuracy but teh accuracy imporved from 97.67% to 99.74%. the forecast cloud does a much better job of capturing teh price movements. now the forecast projects the price going up and it is not a model miss.
 ________________________________________
 IV. Technical Indicators Analysis
 •	Screenshot: (Insert screenshot of "Technical Indicators" plot from Streamlit UI)
@@ -68,12 +69,12 @@ o	Any recent crossovers (Golden Cross/Death Cross) and their implications.
 	Golden cross on July 1, and so far the trend has bullish. 
 •	Bollinger Bands:
 o	Current price relative to bands (e.g., near upper band, lower band, within band).
-	Current price ($628.04) is scraping the ceiling on Upper BB ($636.11). BB floor is creeping up to follow trend.
+	Current price ($628.81) is scraping the ceiling on Upper BB ($633.97). BB floor is creeping up to follow trend.
 o	Band width (wide = high volatility, narrow = low volatility) and its implications.
 	Medium-low width. The widest gap was mid-April. Since then, the width has lessened significantly. This would point to a steady upward trend.
 •	Relative Strength Index (RSI):
 o	Current RSI value: 
-	68.9
+	69.17
 o	Is the stock Overbought (>70) or Oversold (<30)?
 	It has been overbought since June 30, hinting that it is due for a downtrend.
 o	Any divergences (price making new high/low but RSI not)?
@@ -85,33 +86,37 @@ o	Any recent crossovers and their implications.
 	MACD crossed below Signal line, indicating a downtrend(right?). So far though, the price has stayed up. 
 •	Overall Interpretation of Technical Indicators: Do they support or contradict the forecast? What are they suggesting about the stock's current momentum and potential future direction?
 o	The forecast suggests that the stock price is going to continue to go up but that first, it must dip by about -5% to reenter the forecast boundaries. 
-o	The technical indicators tell a mixed story. SMAs and BBs has bullish, RSI and MACD say bearish. The forecast says that in the short term, the price must go down to meet the forecasted price, then it should continue its mild upward trend. 
+    - update with param tuning. price is forecasted to go up!
+o	The technical indicators tell a mixed story. SMAs and BBs has bullish, RSI and MACD say bearish. 
 ________________________________________
 V. Business Intelligence KPIs Analysis
 •	Screenshot: (Insert screenshot of "Business Intelligence KPIs" section from Streamlit UI)
 •	Volume Trends:
 o	Is volume increasing or decreasing with price movements?
-	Current volume is about 4% higher than the average volume, suggesting a little more liquidity than usual. 
+	Current volume is about 8.8% lower than the average volume, suggesting more liquidity than usual. 
 o	Any significant volume spikes or drops? What might they indicate?
 	The app does not include volume in the chart. It allows you to view the current volume vs the average volume.
 •	Volatility:
 o	Current volatility metric from the app.
-	16.55%
+	16.53%
 o	Implications of this volatility for a swing trader (risk/reward).
 	Low volatility indicates that the stock is fairly stable. Not risky. 
 •	Market Correlation Analysis (e.g., vs. S&P 500):
 o	Correlation coefficient from the app:
-	It is the market! So it is highly correlated. 
+	It is the market! So it is not correlated, its 1:1
 o	Interpretation of correlation (e.g., highly correlated, negatively correlated, weakly correlated).
 o	How does this impact risk management for a portfolio? If the market drops, how likely is this stock to follow?
+    - when we figure out teh correlation between a stock and this ETF, we can determine how changes in the ETF will be mirrored in that stock. 
 ________________________________________
 VI. Overall Insights & Recommendations (for a potential swing trader)
 •	Based on all the above analysis, what is the key takeaway regarding this stock for swing trading?
 o	Signals are not super clear in terms of direction but we know this is a low volatility stock and that it tends to trend upwards slowly. If you are interested in buying in, it might be worth waiting for it to drop first as it appears to be overbought and far above the forecast. The forecast is based on historical trends so it appears to be a model miss. For this specific stock, the model's current forecasts are unreliable and should not be used for critical decision-making without significant re-evaluation. If you are comparing other stocks that are positively correlated to SPY, expect a short term down trend. Keep in mind that it has stayed overbought for +3 months in the past. 
+    - update after adjusting the params. forecast points up, and in some ways i would say its a tiebreaker. i think the trend will continue to be overbought, teh price will travel upward with the BBs. it is not a really strong trend, probably not a good one to by into at this point. it does project upwards but really slowly. i would look for another stock to trade but find one that has a strong postiive correlation to SPY. 
 •	Potential Entry/Exit Points: (Suggest based on forecast, technicals)
 •	Identified Risks: (e.g., high volatility, low liquidity, strong market correlation)
 •	Identified Opportunities: (e.g., clear trend, oversold conditions, positive news momentum)
 •	Limitations of the Analysis/Tool for this Stock: (e.g., very unpredictable, model struggled, external factors not captured)
+    please help me fill in. 
 ________________________________________
 VII. Appendix (Optional - for your report)
 •	Screenshot of the "Appendix" section from your app (Ticker list, forecast components, raw data if relevant).
