@@ -120,10 +120,27 @@ def run_cross_validation(model_name):
             train_period, int(available_data * 0.5)
         )  # Max 50% of data for initial
 
-        # Use period that gives us 2-3 folds maximum
-        cv_period = max(
-            period_unit, int((available_data - cv_initial) / 3)
-        )  # Divide remaining data into ~3 folds
+        # Adaptive CV folds based on data size
+        remaining_data = available_data - cv_initial
+
+        # Determine target folds based on data size
+        if available_data <= 250:  # ~1 year or less
+            target_folds = 2
+        elif available_data <= 500:  # ~2 years
+            target_folds = 3
+        elif available_data <= 1000:  # ~4 years
+            target_folds = 4
+        else:  # > 4 years
+            target_folds = 5
+
+        # Calculate period to achieve target folds, but respect limits
+        target_period = remaining_data // target_folds
+        min_period = 30  # Minimum 1 month spacing
+        max_period = min(
+            period_unit, remaining_data // 2
+        )  # Cap by period_unit and ensure at least 2 folds
+
+        cv_period = max(min_period, min(target_period, max_period))
 
         # Horizon should be reasonable for stock prediction (7-30 days)
         cv_horizon = min(
