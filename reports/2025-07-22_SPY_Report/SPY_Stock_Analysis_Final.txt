@@ -182,7 +182,7 @@ Model Parameters Used:
 
 Key Metrics Summary:
 • SMAPE: 0.26%
-• RMSE: $24 max error
+• RMSE: $2.12 (higher end of typical errors)
 • MAE: $1.62 average error
 • Current Price: $628.81
 • Forecast Range: $625.72 - $649.76
