@@ -38,12 +38,26 @@ def display_accuracy_metrics(scores_df):
         )
 
 
-def display_model_performance(scores_df, best_params_dict, selected_stock, user_modified_params=False):
+def display_model_performance(
+    scores_df, best_params_dict, selected_stock, user_modified_params=False
+):
     """Displays model iterations and performance narrative."""
     st.subheader("-- Model Iterations and Performance (Narrative & KPIs) --")
     with st.expander("Click here to expand"):
+        if user_modified_params:
+            st.info(
+                "**Note:** User-defined parameters are being used. The model is using your specified settings instead of auto-tuned optimal values."
+            )
+            st.write(
+                "The model is running with your custom parameters. This allows you to explore different forecasting approaches and validate alternative configurations. While the model iterations and performance metrics below show the systematic approach used for optimization, the current forecast is based on your user-defined settings rather than the automatically optimized parameters."
+            )
+        else:
+            st.write(
+                "To enhance trading strategies and support robust decision-making, this application integrates a Prophet forecasting model, meticulously fine-tuned using advanced machine learning techniques. These methods were chosen not just for technical accuracy, but specifically to optimize for actionable business outcomes."
+            )
+
         st.write(
-            "The tables below illustrate the methodical and iterative approach to model refinement and performance optimization, a critical skill in data science. We begin with a **Baseline Model** using raw data, then introduce a **Winsorized Model** to address data challenges posed by outliers, demonstrating the implementation of effective data preprocessing solutions. Your script then selects the best-performing model between the Baseline and Winsorized models for **hyperparameter tuning**, resulting in the **Final Model**. Each stage is rigorously evaluated using cross-validation and a comparison of performance metrics (SMAPE, RMSE, MAE, MSE), clearly demonstrating the tangible improvements gained at each step. This process highlights a comprehensive data science workflow, from identifying data-driven problems and implementing solutions to optimizing model performance and validating improvements for enhanced predictive accuracy and business value."
+            "The tables below illustrate the methodical and iterative approach to model refinement and performance optimization, a critical skill in machine learning and analytics. We begin with a **Baseline Model** using raw data, then introduce a **Winsorized Model** to address data challenges posed by outliers, demonstrating the implementation of effective data preprocessing solutions. The script then selects the best-performing model between the Baseline and Winsorized models for **hyperparameter tuning**, resulting in the **Final Model**. Each stage is rigorously evaluated using cross-validation and a comparison of performance metrics (SMAPE, RMSE, MAE, MSE), clearly demonstrating the tangible improvements gained at each step. This process highlights a comprehensive machine learning workflow, from identifying data-driven problems and implementing solutions to optimizing model performance and validating improvements for enhanced predictive accuracy and business value."
         )
 
         if "Baseline Model" in scores_df.index:
@@ -187,7 +201,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock, user_
             and "Final Model" in scores_df.index
         ):
             st.write(
-                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **\\${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **\\${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
+                f"* **MAE (Mean Absolute Error) KPI:** A MAE of **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}** implies that, on average, the model's predictions are off by approximately **\${round(scores_df.loc['Final Model']['mae'], 2):.2f}**. This is a direct measure of prediction accuracy in currency units."
             )
             st.write(
                 f"* **SMAPE (Symmetric Mean Absolute Percentage Error) KPI:** A SMAPE of **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** means that, on average, the model's predictions are **{round(scores_df.loc['Final Model']['smape'] * 100, 2):.2f}%** off from the actual values. This provides a normalized, business-friendly view of percentage accuracy."
@@ -196,7 +210,7 @@ def display_model_performance(scores_df, best_params_dict, selected_stock, user_
                 "* **MSE (Mean Squared Error) KPI:** This squares the errors, giving more weight to larger errors. A lower MSE indicates better accuracy. While less intuitive for direct business interpretation, it's a critical metric for model optimization."
             )
             st.write(
-                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **\\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **\\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
+                f"* **RMSE (Root Mean Squared Error) KPI:** The RMSE of **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** suggests that the model's predictions can deviate from the actual values by up to **\${round(scores_df.loc['Final Model']['rmse'], 2):.2f}** in some cases. Being in the same units as the stock price, it offers a tangible measure of typical prediction error."
             )
         else:
             st.write(
@@ -224,13 +238,13 @@ def display_model_performance(scores_df, best_params_dict, selected_stock, user_
         * **Winsorization:** This technique was applied to improve the model's robustness against extreme price fluctuations (outliers). By mitigating the impact of unusual data points, the model generates **more stable and reliable predictions, reducing noise and leading to more confident trading decisions.** The thresholds are dynamically adjusted based on the stock's volatility to ensure relevance.
         * **Adaptive Training Data:** The size of the training dataset is dynamically adjusted based on the stock's volatility and available data. This ensures the model is trained on the most relevant historical period, which is crucial for **maintaining forecast agility and relevance in fluctuating market conditions.**
         """
-        
+
         # Add conditional parameter description
         if user_modified_params:
             about_str += """* **Custom Parameter Usage:** This model uses your manually specified parameter values instead of automated optimization. The changepoint_prior_scale and seasonality_prior_scale values are set according to your Trend Flexibility and Seasonality Strength slider settings, allowing you to test specific scenarios or apply domain expertise about the stock's behavior."""
         else:
             about_str += """* **Hyperparameter Tuning:** Through a cross-validated grid search, key model parameters (changepoint_prior_scale and seasonality_prior_scale) are systematically optimized. This process ensures the model learns the underlying patterns most effectively, leading to **highly accurate forecasts that directly translate into improved decision quality and reduced financial risk.**"""
-        
+
         about_str += """
 
         **-- Model Configuration Options --**

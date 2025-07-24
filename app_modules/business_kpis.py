@@ -128,10 +128,10 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                         * **Significance:** Volume indicates market interest and liquidity.
                         * Higher volumes during price movements can confirm the strength of a trend.
                         * A significant difference between recent and average volume might suggest unusual trading activity.
-                        * **Interpreting Percentage Difference:**
+                        * **Interpretation Guidelines:**
                             * **High Positive (e.g., > +20%):** Suggests unusually strong buying or selling interest, often confirming a price trend.
                             * **High Negative (e.g., < -20%):** Indicates declining interest or lower liquidity, which can signal weakening trends.
-                            * *Note: The exact 'significant' threshold can vary greatly depending on the stock's typical liquidity and market conditions.*
+                            * **Note:** The exact 'significant' threshold can vary greatly depending on the stock's typical liquidity and market conditions.
                         """
                     )
                 else:
@@ -143,8 +143,11 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
 
                     st.write(f"**Annualized Volatility:** {volatility:.2%}")
                     st.write(f"**Volatility Rank:** {volatility_rank}")
-                    st.write(
-                        "*(Higher volatility indicates greater price fluctuation risk and potential for larger daily swings.)*"
+                    st.markdown(
+                        """
+                        * **Interpretation Guidelines:**
+                            * **Higher volatility** indicates greater price fluctuation risk and potential for larger daily swings.
+                        """
                     )
                 else:
                     st.write("Volatility data not available.")
@@ -157,7 +160,7 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                     st.markdown(
                         """
                         * A value close to +1 means strong positive correlation, -1 strong negative correlation, 0 no correlation.
-                        * **Implications:**
+                        * **Interpretation Guidelines:**
                             * **Positive (+1):** Stock generally moves *with* the market. Offers limited diversification; exposed to broader market risks.
                             * **Negative (-1):** Stock generally moves *opposite* the market. Can offer diversification/hedging benefits (rare for individual stocks).
                             * **Near Zero (0):** Stock moves *independently* of the market. Good for diversification; performance tied to company-specific factors.

@@ -1,3 +1,4 @@
 .env
-Stock Forecasting & BI Analysis.docx
-~$ock Forecasting & BI Analysis.docx
+pyvenv.cfg
+venv/
+reports/

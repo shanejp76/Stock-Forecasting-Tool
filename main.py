@@ -297,17 +297,22 @@ if not data.empty:
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
 # --- UI: Display Forecast Summary Statements ---
-display_forecast_summary(forecast_df, data, selected_stock)
+display_forecast_summary(forecast_df, data, selected_stock, scores_df)
 
 # --- UI: Accuracy Metrics ---
 display_accuracy_metrics(scores_df)
+
+# Add dividing line after model accuracy section
+st.markdown("---")
 
 # --- UI: Business Intelligence KPIs ---
 # UPDATED CALL: Pass market_correlation to display_business_kpis
 display_business_kpis(forecast_df, data, stats, volatility, market_correlation)
 
 # --- UI: Model Iterations and Performance ---
-display_model_performance(scores_df, best_params_dict, selected_stock, user_modified_params)
+display_model_performance(
+    scores_df, best_params_dict, selected_stock, user_modified_params
+)
 
 # --- UI: Appendix ---
 display_appendix(tickers_data, m, forecast, data)

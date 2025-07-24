@@ -115,8 +115,8 @@ def calculate_stock_stats(data, selected_stock, price_col):
 
     if not data.empty and price_col in data.columns:
         stats["Symbol"] = selected_stock
-        stats["Current Price"] = round(data[price_col].iloc[-1], 2)
-        stats["Current Volume"] = data["Volume"].iloc[-1]
+        stats["Current Price"] = f"${round(data[price_col].iloc[-1], 2):,.2f}"
+        stats["Current Volume"] = f"{int(data['Volume'].iloc[-1]):,}"
 
         # Daily Percentage Change
         if len(data) > 1:
@@ -145,8 +145,12 @@ def calculate_stock_stats(data, selected_stock, price_col):
         last_52_weeks_data = data[data["Date"] >= one_year_ago]
 
         if not last_52_weeks_data.empty:
-            stats["52-Week High"] = round(last_52_weeks_data[price_col].max(), 2)
-            stats["52-Week Low"] = round(last_52_weeks_data[price_col].min(), 2)
+            stats["52-Week High"] = (
+                f"${round(last_52_weeks_data[price_col].max(), 2):,.2f}"
+            )
+            stats["52-Week Low"] = (
+                f"${round(last_52_weeks_data[price_col].min(), 2):,.2f}"
+            )
         else:
             stats["52-Week High"] = "N/A"
             stats["52-Week Low"] = "N/A"

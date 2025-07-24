@@ -21,7 +21,7 @@ import streamlit as st
 import pandas as pd
 
 
-def display_forecast_summary(forecast_df, data, selected_stock):
+def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
     """
     Displays an adaptive forecast summary for the selected stock.
     Shows forecast for 10 days if available, otherwise shows the maximum available forecast period.
@@ -30,6 +30,7 @@ def display_forecast_summary(forecast_df, data, selected_stock):
         forecast_df (pd.DataFrame): DataFrame containing the forecast data.
         data (pd.DataFrame): DataFrame containing the historical stock data.
         selected_stock (str): The ticker symbol of the selected stock.
+        scores_df (pd.DataFrame, optional): DataFrame containing model accuracy scores.
     """
     if not forecast_df.empty:
         st.markdown("---")
@@ -77,6 +78,7 @@ def display_forecast_summary(forecast_df, data, selected_stock):
             st.write(
                 f"The forecast predicts the price of {selected_stock} will be **\${forecast_price_val:.2f}** on **{forecast_date_str}**."
             )
+
             if trend_percentage_val >= 0:
                 st.write(
                     f"This represents a **+{trend_percentage_val:.2f}% increase** from the last known price."
