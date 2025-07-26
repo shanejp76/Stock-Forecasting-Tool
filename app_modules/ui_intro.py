@@ -37,19 +37,22 @@ def display_welcome_expander():
     with st.expander("Welcome! Click here to expand"):
         st.write(
             """
-            -- Welcome to the Prophet Forecasting App: A Data Science Exploration --
+            -- Welcome to the Prophet Forecasting App: A Machine Learning & Analytics Exploration --
 
             **by Shane Peterson**
 
-            This tool demonstrates the application of the Prophet forecasting model for predicting short-term price movements in stocks. This project focuses on showcasing the following data science skills:
+            This tool demonstrates the application of the Prophet forecasting model for predicting short-term price movements in stocks. This project focuses on showcasing the following machine learning and analytical skills:
 
+            * **Data Acquisition & Preprocessing:** Fetching and cleaning financial data from reliable sources.
+            * **User-Defined Parameters:** Allowing customizable model parameters for flexible analysis and validation of different forecasting approaches.
+            * **Machine Learning Model Implementation:** Building and deploying Prophet forecasting models. By default, models are meticulously fine-tuned using advanced machine learning techniques and cross-validation to optimize for actionable business outcomes. When custom parameters are specified, the model uses those user-defined settings instead of auto-tuning.
             * **Time Series Forecasting:** Utilizing the Prophet model to predict stock prices.
             * **Hyperparameter Tuning:** Optimizing model performance through hyperparameter tuning. (see About section below)
-            * **Model Evaluation:** Assessing model performance using appropriate metrics (e.g., SMAPE, RMSE). (see Accuracy Metrics section below)
+            * **Model Evaluation:** Assessing model performance using appropriate metrics (e.g., SMAPE, RMSE). (see Model Iterations and Performance section below)
 
-            The app includes visualizations such as line charts, moving averages, and Bollinger Bands to provide context for the forecast.
+            The app includes comprehensive visualizations (candlestick charts, technical indicators including RSI, MACD, Bollinger Bands, and moving averages) alongside business intelligence KPIs that provide actionable insights for investment decision-making.
 
-            **Note on Data:** *This app uses a limited historical data source for demonstration purposes. Refer to the 'About' section for details on model validation and data limitations.*
+            **Note on Data:** *This app uses Alpha Vantage data with the following limitations: maximum 2-year historical period, daily market data only (no pre/post-market), potential API rate limits, and possible gaps in historical data for certain tickers. The model uses the most recent complete trading days available within this timeframe. Refer to the 'About' section for details on model validation methodology.*
 
             **Disclaimer: This app is for educational and demonstrative purposes only. It is not a financial recommendation and should not be used for actual trading decisions.**
 
@@ -119,15 +122,14 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             desired_column_order = [
                 "Symbol",
                 "Current Price",
+                "Current Volume",
                 "Daily % Change",
                 "YTD % Change",
+                "Annualized Volatility",
                 "52-Week High",
                 "52-Week Low",
-                "Current Volume",
-                "Annualized Volatility",
-                "Average Daily Percentage Change",
-                "Last Data Date",
                 "Earliest Data Date",
+                "Last Data Date",
             ]
             existing_ordered_columns = [
                 col
@@ -135,6 +137,13 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
                 if col in stats_df_for_display.columns
             ]
             stats_df_for_display = stats_df_for_display[existing_ordered_columns]
+
+            # Rename 'Average Daily Percentage Change' to 'Daily % Change'
+            if "Average Daily Percentage Change" in stats_df_for_display.columns:
+                stats_df_for_display = stats_df_for_display.rename(
+                    columns={"Average Daily Percentage Change": "Daily % Change"}
+                )
+
             st.dataframe(stats_df_for_display, height=60, use_container_width=True)
         else:
             st.warning("Stock statistics are not available.")
