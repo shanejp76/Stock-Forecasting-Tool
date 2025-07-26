@@ -24,24 +24,25 @@ import os
 from dotenv import load_dotenv
 from datetime import date, timedelta
 from alpha_vantage.timeseries import TimeSeries
-import itertools
 
 # Import functions from our new modules from the 'app_modules' package
-from app_modules.data_handler import (
-    process_technical_indicators,
-)
-from app_modules.model_trainer import (
-    dynamic_winsorize,
-    model_drafts,
-    tune_and_train_final_model,
-)
+from app_modules.data_handler import process_technical_indicators
 from app_modules.plotter import plot_forecast
-from prophet.diagnostics import (
-    cross_validation,
-)
 from app_modules.config import load_environment_variables, EXCHANGE_CODE
 
-# Import new UI modules - UPDATED IMPORTS
+# Import new pipeline modules
+from app_modules.data_pipeline import (
+    prepare_training_data,
+    setup_cross_validation_function,
+    merge_forecast_with_data,
+)
+from app_modules.model_orchestrator import (
+    determine_optimization_strategy,
+    execute_training_pipeline,
+    format_scores_dataframe,
+)
+
+# Import UI modules
 from app_modules.ui_intro import display_welcome_expander, display_stock_selection
 from app_modules.forecast_summary import display_forecast_summary
 from app_modules.performance_metrics import (
@@ -50,8 +51,6 @@ from app_modules.performance_metrics import (
 )
 from app_modules.business_kpis import display_business_kpis
 from app_modules.ui_appendix import display_appendix
-
-# NEW IMPORT: Import the market_correlation module
 from app_modules.market_correlation import calculate_market_correlation
 
 
@@ -95,195 +94,27 @@ data = process_technical_indicators(data, price_col)
 
 ## Forecasting
 
-# Apply dynamic winsorization to raw data
-data = dynamic_winsorize(data.copy(), price_col, percentiles=percentiles)
+# --- Prepare Training Data ---
+df_train = prepare_training_data(data, price_col, percentiles, train_period)
 
-# Get training data
-df_train = data[["Date", price_col, "winsorized"]].copy()
-df_train = df_train.rename(columns={"Date": "ds"})
+# --- Setup Cross-Validation Function ---
+run_cross_validation = setup_cross_validation_function(df_train, train_period, period_unit, forecast_period)
 
-if train_period <= len(df_train):
-    df_train = df_train[-train_period:]
-else:
-    # Silently adjust training period to available data length
-    df_train = df_train
-
-
-# Lambda function for cross validation metrics
-def run_cross_validation(model_name):
-    try:
-        # Balanced CV: 2-4 folds maximum for performance
-        available_data = len(df_train)
-
-        # Use training period as initial, but ensure we have enough data for multiple folds
-        cv_initial = min(
-            train_period, int(available_data * 0.5)
-        )  # Max 50% of data for initial
-
-        # Adaptive CV folds based on data size
-        remaining_data = available_data - cv_initial
-
-        # Determine target folds based on data size
-        if available_data <= 250:  # ~1 year or less
-            target_folds = 2
-        elif available_data <= 500:  # ~2 years
-            target_folds = 3
-        elif available_data <= 1000:  # ~4 years
-            target_folds = 4
-        else:  # > 4 years
-            target_folds = 5
-
-        # Calculate period to achieve target folds, but respect limits
-        target_period = remaining_data // target_folds
-        min_period = 30  # Minimum 1 month spacing
-        max_period = min(
-            period_unit, remaining_data // 2
-        )  # Cap by period_unit and ensure at least 2 folds
-
-        cv_period = max(min_period, min(target_period, max_period))
-
-        # Horizon should be reasonable for stock prediction (7-30 days)
-        cv_horizon = min(
-            forecast_period, 30, int(available_data * 0.1)
-        )  # Max 30 days or 10% of data
-
-        return cross_validation(
-            model_name,
-            initial=f"{cv_initial} days",
-            period=f"{cv_period} days",
-            horizon=f"{cv_horizon} days",
-        )
-    except ValueError as e:
-        st.warning(
-            f"Cross-validation failed: {e}. This might happen if your data is too short for the chosen initial, period, or horizon."
-        )
-        return pd.DataFrame()
-
-
-# Get metrics for baseline & winsorized models
-scores_df = pd.DataFrame(columns=["mse", "rmse", "mae", "smape"])
-
-# Check if user has modified parameters from defaults (slider position 5 = automated)
-user_modified_params = (trend_flexibility != 5) or (seasonality_strength != 5)
-
-if user_modified_params:
-    optimization_mode = "Using your custom parameters. Skipping automated optimization."
-    all_params = [
-        {
-            "changepoint_prior_scale": changepoint_prior,
-            "seasonality_prior_scale": seasonality_prior,
-        }
-    ]
-else:
-    optimization_mode = "Running automated parameter optimization."
-    param_grid = {
-        "changepoint_prior_scale": [0.001, 0.01, 0.1, 0.5],
-        "seasonality_prior_scale": [0.01, 0.1, 1.0, 10.0],
-    }
-    all_params = [
-        dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())
-    ]
-
-m, scores_df, forecast, best_params_dict, forecast_summary = (
-    None,
-    scores_df,
-    pd.DataFrame(),
-    {},
-    "",
+# --- Determine Optimization Strategy ---
+optimization_mode, all_params, user_modified_params = determine_optimization_strategy(
+    trend_flexibility, seasonality_strength, changepoint_prior, seasonality_prior
 )
 
-# Create a placeholder for progressive status updates
-status_placeholder = st.empty()
+# --- Execute Model Training Pipeline ---
+m, scores_df, forecast, best_params_dict, forecast_summary, chosen_approach = execute_training_pipeline(
+    df_train, price_col, all_params, forecast_period, run_cross_validation
+)
 
-# Step 1: Train baseline and winsorized models
-status_placeholder.info(f"Step 1/3: Training baseline models... ({optimization_mode})")
-if not df_train.empty and len(df_train) > 0:
-    scores_df = model_drafts(
-        df_train, scores_df, price_col, _cv_func=run_cross_validation
-    )
+# --- Merge Forecast with Data ---
+forecast_df = merge_forecast_with_data(forecast, data, train_period)
 
-    # Step 2: Compare models and select best data preparation approach
-    status_placeholder.info("Step 2/3: Comparing baseline vs winsorized models...")
-    if len(scores_df) >= 2:
-        if scores_df.iloc[0]["rmse"] < scores_df.iloc[1]["rmse"]:
-            df_train = df_train.rename(columns={price_col: "y"})
-            chosen_approach = "raw data"
-        else:
-            df_train = df_train.rename(columns={"winsorized": "y"})
-            chosen_approach = "winsorized data"
-    else:
-        st.warning(
-            "Not enough model drafts for comparison. Using raw 'Adjusted Close' as target for final model."
-        )
-        df_train = df_train.rename(columns={price_col: "y"})
-        chosen_approach = "raw data (fallback)"
-
-    # Step 3: Train final model with hyperparameter tuning
-    status_placeholder.info(
-        f"Step 3/3: Training final model using {chosen_approach}..."
-    )
-
-    m, scores_df, forecast, best_params_dict, forecast_summary = (
-        tune_and_train_final_model(
-            df_train,
-            all_params,
-            forecast_period,
-            scores_df,
-            _cv_func=run_cross_validation,
-            summary_n_days_out=forecast_period,
-        )
-    )
-
-    if m is not None and not forecast.empty:
-        status_placeholder.success(
-            f"All models trained successfully! Final model uses {chosen_approach}."
-        )
-    else:
-        status_placeholder.error("Error: Model object or forecast is empty")
-        st.stop()
-else:
-    status_placeholder.error("Error: Training data is empty")
-    st.stop()
-
-# Merge entire forecast w actual data & indicators
-if not forecast.empty and not data.empty:
-    # Limit historical data to match training period for visual consistency
-    # Use the minimum of training period and available data
-    actual_display_days = min(train_period, len(data))
-    display_data = data[-actual_display_days:]
-
-    forecast_df = pd.merge(
-        left=display_data, right=forecast, right_on="ds", left_on="Date", how="right"
-    )[
-        [
-            "ds",
-            "Adjusted Close",
-            "yhat",
-            "yhat_lower",
-            "yhat_upper",
-            "SMA50",
-            "bb_upper",
-            "bb_lower",
-            "SMA20",
-            "SMA100",
-            "SMA200",
-            "GoldenCross_Signal",
-            "DeathCross_Signal",
-            "RSI",
-            "MACD",
-            "MACD_Signal",
-            "MACD_Hist",
-            "Volume",
-        ]
-    ]
-    forecast_df.rename(columns={"ds": "Date"}, inplace=True)
-else:
-    st.stop()  # Stop execution if forecast merge fails
-
-# Get metrics
-if len(scores_df) >= 3:
-    scores_df.index = ["Baseline Model", "Winsorized Model", "Final Model"]
-    scores_df = scores_df.reindex(sorted(scores_df.columns), axis=1)
+# --- Format Scores DataFrame ---
+scores_df = format_scores_dataframe(scores_df)
 
 # NEW STEP: Calculate Market Correlation
 market_correlation = None
