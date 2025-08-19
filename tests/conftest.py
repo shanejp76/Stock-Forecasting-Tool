@@ -42,6 +42,30 @@ def sample_stock_data():
     return data.set_index('Date')
 
 
+@pytest.fixture
+def available_data():
+    """Fixture for CV test data availability."""
+    return 500
+
+
+@pytest.fixture
+def train_period_base():
+    """Fixture for CV test training period."""
+    return 365
+
+
+@pytest.fixture 
+def period_unit_base():
+    """Fixture for CV test period unit."""
+    return 365
+
+
+@pytest.fixture
+def forecast_period_base():
+    """Fixture for CV test forecast period."""
+    return 365
+
+
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to handle missing dependencies."""
     if not DEPENDENCIES_AVAILABLE:

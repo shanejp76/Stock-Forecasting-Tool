@@ -30,7 +30,9 @@ def test_environment_variables():
     # Just test that os.environ works
     import os
     env_vars = os.environ
-    assert isinstance(env_vars, dict)
+    # os.environ is a mapping, not a dict, but behaves like one
+    assert hasattr(env_vars, 'get')
+    assert hasattr(env_vars, 'keys')
 
 def test_requirements_file():
     """Test that requirements.txt exists and is readable."""
@@ -39,7 +41,14 @@ def test_requirements_file():
     
     assert os.path.exists(requirements_path)
     
-    with open(requirements_path, 'r') as f:
-        content = f.read()
-        assert len(content) > 0
-        assert 'streamlit' in content.lower()
+    try:
+        with open(requirements_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            assert len(content) > 0
+            assert 'streamlit' in content.lower()
+    except UnicodeDecodeError:
+        # If UTF-8 fails, try with different encodings
+        with open(requirements_path, 'r', encoding='utf-16') as f:
+            content = f.read()
+            assert len(content) > 0
+            assert 'streamlit' in content.lower()
