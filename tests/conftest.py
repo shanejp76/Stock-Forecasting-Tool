@@ -3,14 +3,33 @@ Test configuration and fixtures for the Stock Forecasting Tool.
 """
 import os
 import pytest
-import pandas as pd
+import sys
 from unittest.mock import Mock
+
+# Add the parent directory to the path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Test if dependencies are available
+DEPENDENCIES_AVAILABLE = True
+try:
+    import pandas as pd
+    import numpy as np
+except ImportError:
+    DEPENDENCIES_AVAILABLE = False
 
 
 @pytest.fixture
 def sample_stock_data():
     """Create sample stock data for testing."""
+    if not DEPENDENCIES_AVAILABLE:
+        pytest.skip("Dependencies not available")
+    
+    import pandas as pd
+    import numpy as np
+    
     dates = pd.date_range('2024-01-01', periods=100, freq='D')
+    np.random.seed(42)  # For reproducible tests
+    
     data = pd.DataFrame({
         'Date': dates,
         'Open': 100 + pd.Series(range(100)) * 0.1,
@@ -21,6 +40,14 @@ def sample_stock_data():
         'Volume': 1000000 + pd.Series(range(100)) * 1000
     })
     return data.set_index('Date')
+
+
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection to handle missing dependencies."""
+    if not DEPENDENCIES_AVAILABLE:
+        skip_deps = pytest.mark.skip(reason="Required dependencies not available")
+        for item in items:
+            item.add_marker(skip_deps)
 
 
 @pytest.fixture

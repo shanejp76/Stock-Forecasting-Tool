@@ -27,7 +27,7 @@ def load_environment_variables():
         tuple: (alpha_vantage_key, finnhub_api_key)
     """
     load_dotenv()
-    alpha_vantage_key = os.getenv("ALPHA_VANTAGE_KEY")
+    alpha_vantage_key = os.getenv("ALPHA_VANTAGE_API_KEY")
     finnhub_api_key = os.getenv("FINNHUB_API_KEY", "YOUR_FINNHUB_API_KEY")
     return alpha_vantage_key, finnhub_api_key
 

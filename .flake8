@@ -1,0 +1,22 @@
+[flake8]
+max-line-length = 100
+extend-ignore = 
+    E203,  # whitespace before ':'
+    W503,  # line break before binary operator
+    E501,  # line too long (handled by black)
+    F401,  # imported but unused (common in __init__.py)
+    F403,  # star imports
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .github,
+    venv,
+    env,
+    .venv,
+    Archive,
+    reports
+per-file-ignores =
+    __init__.py:F401,F403
+    tests/*:F401,F403,E501
+max-complexity = 12
