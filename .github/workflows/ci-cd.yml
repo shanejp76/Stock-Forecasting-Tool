@@ -41,26 +41,64 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov flake8 black isort
 
+    - name: Verify Python environment
+      run: |
+        echo "Python version:"
+        python --version
+        echo "Pip packages:"
+        pip list | grep -E "(pytest|flake8|black|isort|pandas|numpy|streamlit)" || echo "Some packages may not be installed"
+        echo "Python path:"
+        python -c "import sys; print('\n'.join(sys.path))"
+
     - name: Create .env file for tests
       run: |
         echo "ALPHA_VANTAGE_API_KEY=test_key" >> .env
         echo "FINNHUB_API_KEY=test_key" >> .env
 
     - name: Code formatting check with Black
-      run: black --check --diff app_modules/ tests/ main.py || echo "Code formatting issues found (not failing build)"
+      run: |
+        set +e
+        black --check --diff app_modules/ tests/ main.py
+        black_exit_code=$?
+        if [ $black_exit_code -ne 0 ]; then
+          echo "Code formatting issues found (not failing build in development)"
+        fi
+        exit 0
 
     - name: Import sorting check with isort
-      run: isort --check-only --diff app_modules/ tests/ main.py || echo "Import sorting issues found (not failing build)"
+      run: |
+        set +e
+        isort --check-only --diff app_modules/ tests/ main.py
+        isort_exit_code=$?
+        if [ $isort_exit_code -ne 0 ]; then
+          echo "Import sorting issues found (not failing build in development)"
+        fi
+        exit 0
 
     - name: Lint with flake8
       run: |
-        flake8 app_modules/ tests/ main.py --count --select=E9,F63,F7,F82 --show-source --statistics || echo "Critical linting issues found"
+        set +e
+        echo "Running critical error checks..."
+        flake8 app_modules/ tests/ main.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        critical_exit_code=$?
+        echo "Running full linting..."
         flake8 app_modules/ tests/ main.py --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+        if [ $critical_exit_code -ne 0 ]; then
+          echo "Critical linting issues found (not failing build in development)"
+        fi
+        exit 0
 
     - name: Test with pytest
       run: |
-        python -m pytest tests/ -v --tb=short --disable-warnings || echo "Some tests failed (not failing build in early development)"
-      continue-on-error: true
+        set +e  # Don't exit on error
+        python -m pytest tests/ -v --tb=short --disable-warnings
+        test_exit_code=$?
+        if [ $test_exit_code -ne 0 ]; then
+          echo "Some tests failed (not failing build in early development) - Exit code: $test_exit_code"
+        else
+          echo "All tests passed successfully!"
+        fi
+        exit 0  # Always exit successfully
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
