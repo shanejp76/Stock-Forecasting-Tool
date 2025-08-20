@@ -180,6 +180,103 @@ This document outlines the transformation of the existing Streamlit-based stock 
    - Cloud Functions for data ingestion
    - Cloud Scheduler for automation
 
+## Current Status: Ready for GCP Deployment
+
+### CI/CD Pipeline Status ✅
+The containerization and CI/CD pipeline infrastructure is complete and fully functional:
+- ✅ **Docker containerization**: Multi-stage builds with production optimization
+- ✅ **GitHub Actions**: Automated testing, security scanning, and container builds
+- ✅ **Container Registry**: Images automatically built and pushed to GitHub Container Registry
+- ✅ **Local deployment**: Verified working at `http://localhost:8501`
+
+### Next Steps: Google Cloud Platform Setup
+
+To enable cloud deployment, the following GCP configuration steps are required:
+
+#### 1. Google Cloud Project Setup
+```bash
+# Create new project (or use existing)
+gcloud projects create stock-forecasting-tool-prod
+gcloud config set project stock-forecasting-tool-prod
+
+# Enable required APIs
+gcloud services enable run.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable containerregistry.googleapis.com
+```
+
+#### 2. Service Account Configuration
+```bash
+# Create service account for GitHub Actions
+gcloud iam service-accounts create github-actions \
+    --description="Service account for GitHub Actions CI/CD" \
+    --display-name="GitHub Actions"
+
+# Grant necessary permissions
+gcloud projects add-iam-policy-binding stock-forecasting-tool-prod \
+    --member="serviceAccount:github-actions@stock-forecasting-tool-prod.iam.gserviceaccount.com" \
+    --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding stock-forecasting-tool-prod \
+    --member="serviceAccount:github-actions@stock-forecasting-tool-prod.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountUser"
+
+# Create and download service account key
+gcloud iam service-accounts keys create github-actions-key.json \
+    --iam-account=github-actions@stock-forecasting-tool-prod.iam.gserviceaccount.com
+```
+
+#### 3. GitHub Repository Secrets
+Add the following secrets to your GitHub repository (`Settings > Secrets and variables > Actions`):
+
+| Secret Name | Value | Description |
+|-------------|-------|-------------|
+| `GCP_SERVICE_ACCOUNT_KEY` | Contents of `github-actions-key.json` | Base64-encoded service account key |
+| `GCP_PROJECT_ID` | `stock-forecasting-tool-prod` | Google Cloud project ID |
+| `GCP_REGION` | `us-central1` | Deployment region |
+
+#### 4. Enable Deployment Jobs
+Once the secrets are configured, uncomment the deployment jobs in `.github/workflows/ci-cd.yml`:
+
+```yaml
+# Uncomment these jobs in ci-cd.yml after GCP setup
+deploy-staging:
+  needs: build-and-push
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
+  environment: staging
+  
+deploy-production:
+  needs: deploy-staging
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
+  environment: production
+```
+
+#### 5. Cloud Run Deployment Configuration
+The deployment will create:
+- **Staging environment**: `stock-forecasting-staging` service
+- **Production environment**: `stock-forecasting-prod` service
+- **Custom domains**: Can be configured post-deployment
+- **Environment variables**: API keys and configuration injected securely
+
+#### 6. Verification Steps
+After GCP setup:
+1. Push code to trigger CI/CD pipeline
+2. Verify deployment jobs complete successfully
+3. Access staging URL provided in deployment logs
+4. Test application functionality in cloud environment
+5. Promote to production if staging tests pass
+
+### Estimated Setup Time
+- **GCP Project Setup**: 15 minutes
+- **Service Account Configuration**: 10 minutes  
+- **GitHub Secrets Configuration**: 5 minutes
+- **First Deployment**: 10 minutes
+- **Testing & Verification**: 15 minutes
+
+**Total: ~1 hour for complete cloud deployment setup**
+
 ## Technology Stack
 
 ### Core Technologies
