@@ -2,9 +2,10 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -12,10 +13,10 @@ env:
 
 jobs:
   test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.11]
-    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
@@ -139,6 +140,8 @@ jobs:
   build-and-push:
     needs: [test, security-scan]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     permissions:
       contents: read
       packages: write
@@ -179,6 +182,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+  # Deployment jobs are currently disabled until Google Cloud credentials are configured
+  # To enable: Set up GCP_SERVICE_ACCOUNT_KEY secret and change "if: false" to "if: github.ref == 'refs/heads/main'"
+  
   deployment-info:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -203,4 +209,76 @@ jobs:
         echo "   ghcr.io/${{ github.repository }}:latest"
 
   # Deployment jobs will be added back when Google Cloud credentials are configured
-  # See docs/DOCKER_DEPLOYMENT.md for setup instructions
+  # For now, only the deployment-info job runs to show status
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check for GCP credentials
+      id: check-creds
+      run: |
+        if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
+          echo "GCP credentials not found. Skipping deployment."
+          echo "skip_deployment=true" >> $GITHUB_OUTPUT
+        else
+          echo "skip_deployment=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Authenticate to Google Cloud
+      if: steps.check-creds.outputs.skip_deployment != 'true'
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    - name: Set up Cloud SDK
+      if: steps.check-creds.outputs.skip_deployment != 'true'
+      uses: google-github-actions/setup-gcloud@v1
+
+    - name: Deploy to Cloud Run (Production)
+      if: steps.check-creds.outputs.skip_deployment != 'true'
+      run: |
+        gcloud run deploy stock-forecasting-app \
+          --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated \
+          --port 8080 \
+          --memory 2Gi \
+          --cpu 2 \
+          --min-instances 1 \
+          --max-instances 10 \
+          --set-env-vars "ENVIRONMENT=production" \
+          --set-secrets "ALPHA_VANTAGE_API_KEY=alpha-vantage-key:latest,FINNHUB_API_KEY=finnhub-key:latest"
+
+    - name: Skip deployment message
+      if: steps.check-creds.outputs.skip_deployment == 'true'
+      run: |
+        echo "⚠️ Production deployment skipped: GCP credentials not configured"
+        echo "To enable deployment, add GCP_SERVICE_ACCOUNT_KEY secret to repository"
+        echo "and set ENABLE_DEPLOYMENT repository variable to 'true'"
+
+    - name: Get production URL
+      id: prod-url
+      if: steps.check-creds.outputs.skip_deployment != 'true'
+      run: |
+        URL=$(gcloud run services describe stock-forecasting-app --region=us-central1 --format="value(status.url)")
+        echo "url=$URL" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      if: steps.check-creds.outputs.skip_deployment != 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        body: |
+          🚀 Production deployment successful!
+          
+          **Deployment URL**: ${{ steps.prod-url.outputs.url }}
+          
+          **Changes in this release:**
+          ${{ github.event.head_commit.message }}
+        draft: false
+        prerelease: false
