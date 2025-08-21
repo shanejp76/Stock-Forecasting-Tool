@@ -210,7 +210,6 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: staging
     
     steps:
     - name: Checkout code
@@ -227,6 +226,10 @@ jobs:
     - name: Configure Docker to use gcloud as a credential helper
       run: gcloud auth configure-docker
       
+    - name: Authenticate Docker with GitHub Container Registry
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        
     - name: Deploy to Cloud Run (Staging)
       run: |
         gcloud run deploy stock-forecasting-staging \
@@ -259,12 +262,12 @@ jobs:
     needs: deploy-staging
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Authenticate to Google Cloud
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -276,6 +279,10 @@ jobs:
     - name: Configure Docker to use gcloud as a credential helper
       run: gcloud auth configure-docker
       
+    - name: Authenticate Docker with GitHub Container Registry
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        
     - name: Deploy to Cloud Run (Production)
       run: |
         gcloud run deploy stock-forecasting-prod \
