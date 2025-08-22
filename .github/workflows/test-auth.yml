@@ -12,11 +12,36 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Create service account key file
+    - name: Debug service account key
+      run: |
+        echo "Checking if secret exists..."
+        if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
+          echo "ERROR: GCP_SERVICE_ACCOUNT_KEY secret is empty or not set"
+          exit 1
+        fi
+        echo "Secret exists and has content"
+        echo "Length: $(echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' | wc -c)"
+        echo "First 50 characters: $(echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' | head -c 50)"
+        echo "Last 50 characters: $(echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' | tail -c 50)"
+        
+    - name: Create and validate service account key file
       run: |
         echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
-        cat /tmp/gcp-key.json | jq . || echo "JSON validation failed"
+        echo "File created, size: $(stat -c%s /tmp/gcp-key.json 2>/dev/null || stat -f%z /tmp/gcp-key.json)"
+        echo "Validating JSON..."
+        if ! jq . /tmp/gcp-key.json > /dev/null 2>&1; then
+          echo "ERROR: Invalid JSON in service account key"
+          echo "First few lines of file:"
+          head -5 /tmp/gcp-key.json
+          exit 1
+        fi
+        echo "JSON is valid"
+        echo "Service account email: $(jq -r .client_email /tmp/gcp-key.json)"
+        echo "Project ID: $(jq -r .project_id /tmp/gcp-key.json)"
         
+    - name: Setup Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
     - name: Authenticate with gcloud using key file
       run: |
         gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
