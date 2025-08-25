@@ -238,7 +238,7 @@ jobs:
           --region ${{ secrets.GCP_REGION }} \
           --project ${{ secrets.GCP_PROJECT_ID }} \
           --allow-unauthenticated \
-          --port 8501 \
+          --port 8080 \
           --memory 1Gi \
           --cpu 1 \
           --min-instances 0 \
@@ -290,7 +290,7 @@ jobs:
           --region ${{ secrets.GCP_REGION }} \
           --project ${{ secrets.GCP_PROJECT_ID }} \
           --allow-unauthenticated \
-          --port 8501 \
+          --port 8080 \
           --memory 2Gi \
           --cpu 2 \
           --min-instances 1 \
