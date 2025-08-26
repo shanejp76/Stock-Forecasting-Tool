@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 # Add the parent directory to the path so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app_modules.bigquery_client import get_bigquery_client
+from app_modules.bigquery_client import BigQueryClient
 from app_modules.config import load_environment_variables
 from alpha_vantage.timeseries import TimeSeries
 import pandas as pd
@@ -40,7 +40,7 @@ def test_bigquery_ingestion():
 
     # Initialize clients
     print("🔌 Initializing BigQuery client...")
-    bq_client = get_bigquery_client()
+    bq_client = BigQueryClient()
 
     if not bq_client.test_connection():
         print("❌ Error: BigQuery connection failed")

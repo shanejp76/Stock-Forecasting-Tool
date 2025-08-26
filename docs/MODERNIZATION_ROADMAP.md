@@ -31,27 +31,36 @@ This document outlines the transformation of the existing Streamlit-based stock 
 - Separate data ingestion from application logic
 - Enable data lineage and auditability
 
-### Current Status: FOUNDATION COMPLETE ✅
-**MAJOR MILESTONE ACHIEVED!** Google Cloud project, BigQuery dataset, and data ingestion pipeline are working end-to-end.
+### Current Status: FOUNDATION COMPLETE
+**MAJOR MILESTONE ACHIEVED** Google Cloud project, BigQuery dataset, and data ingestion pipeline are working end-to-end.
 
 ### Implementation Steps
-1. **✅ COMPLETED: Setup Google Cloud Environment**
-   - ✅ Installed Google Cloud SDK locally
-   - ✅ Created BigQuery-enabled GCP project (`stock-forecasting-tool-prod`)
-   - ✅ Configured authentication and enabled required APIs
-   - ✅ Created BigQuery dataset with proper schema
-   - ✅ Tested end-to-end data ingestion and retrieval
+1. **COMPLETED: Setup Google Cloud Environment**
+   - Installed Google Cloud SDK locally
+   - Created BigQuery-enabled GCP project (`stock-forecasting-tool-prod`)
+   - Configured authentication and enabled required APIs
+   - Created BigQuery dataset with proper schema
+   - Tested end-to-end data ingestion and retrieval
 
-2. **🔄 IN PROGRESS: Scale Data Ingestion**
-   - Create BigQuery dataset for stock data storage
-   - Configure service account and authentication
-   - Design normalized schema for OHLC data, technical indicators, and metadata
+2. **COMPLETED: Scale Data Ingestion**
+   - DONE: Created BigQuery dataset for stock data storage
+   - DONE: Configured service account and authentication  
+   - DONE: Designed normalized schema for OHLC data, technical indicators, and metadata
+   - DONE: Enhanced bulk loading script with progress tracking, checkpointing, and premium rate limiting
+   - DONE: Integrated symbol universe retrieval from Alpha Vantage LISTING_STATUS endpoint
+   - DONE: Implemented enterprise-grade data ingestion pipeline
 
-2. **Data Ingestion Pipeline**
-   - Create scheduled jobs to populate BigQuery from Alpha Vantage/Finnhub
-   - Implement incremental loading to avoid duplicate data
-   - Add data validation and quality checks
-   - Store both raw and processed data for auditability
+3. **READY: Initial Data Loading Strategy**
+   - **One-time bulk load**: 2 years historical data per symbol
+   - **Manual operations**: Basic data loading and querying for Phase 1
+   - **Schema validation**: Ensure data structure matches application needs
+   - **Foundation testing**: Verify BigQuery integration before automation
+
+4. **Application Integration**
+   - Modify `data_handler.py` to query BigQuery instead of direct API calls
+   - Maintain API fallback for testing and edge cases
+   - Test end-to-end functionality with BigQuery data source
+   - Validate forecasting models work with warehouse data
 
 3. **Raw Data Schema**
    ```sql
@@ -84,13 +93,25 @@ This document outlines the transformation of the existing Streamlit-based stock 
    );
    ```
 
-4. **API Integration Layer**
+4. **Application Integration**
    - Modify existing `data_handler.py` to query BigQuery instead of APIs
-   - Maintain API fallback for real-time data when needed
-   - Implement data freshness checks and alerts
+   - Maintain API fallback for testing and edge cases
+   - Test end-to-end functionality with BigQuery data source
+   - Validate forecasting models work with warehouse data
 
 ### Priority: CRITICAL
 This phase unlocks historical analysis, reduces API dependencies, and enables advanced analytics.
+
+### Implementation Note: Foundation Before Automation
+Phase 1 focuses on basic BigQuery integration with manual operations. The incremental update automation (daily append/delete) is deferred to **Phase 5: Orchestration & Automation** to avoid premature optimization. This allows validation of the core architecture before adding scheduling complexity.
+
+### Development Approach: Native Python First
+During Phase 1 implementation, use direct Python development for faster iteration:
+```bash
+pip install -r requirements.txt
+streamlit run main.py
+```
+Local Docker testing can be deferred until Phase 2 when production simulation becomes valuable for BigQuery performance validation.
 
 ## Phase 2: Advanced Feature Engineering (MEDIUM PRIORITY)
 
@@ -299,6 +320,59 @@ This phase should be implemented once the BigQuery data architecture is stable a
 ### Priority: HIGH (after BigQuery implementation)
 This ensures production readiness of the final cloud-native architecture.
 
+## Docker Deployment Strategy
+
+### Local Development vs Production Simulation Timeline
+
+**Current Phase (BigQuery Integration): Skip Local Docker**
+- Focus on native Python development for faster iteration
+- Use direct database connections for debugging BigQuery integration
+- Leverage existing GitHub Actions CI/CD for container validation
+
+**Phase 2+ (Production Simulation Required): Local Docker Critical**
+When these scenarios become important:
+
+1. **BigQuery Performance Testing**
+   ```bash
+   # Simulate production workloads locally
+   docker-compose up -d
+   # Test connection pooling under concurrent load
+   # Validate query optimization and caching strategies
+   # Debug memory usage patterns with large datasets
+   ```
+
+2. **Multi-Service Integration Testing**
+   ```yaml
+   # docker-compose.yml - Future enhanced setup
+   services:
+     app:
+       build: .
+       environment:
+         - BIGQUERY_PROJECT_ID=${BIGQUERY_PROJECT_ID}
+     
+     monitoring:
+       image: prom/prometheus
+       
+     load-test:
+       image: locustio/locust
+       volumes:
+         - ./tests/load:/mnt/locust
+   ```
+
+3. **Production Error Scenario Testing**
+   - Network failures to BigQuery
+   - API rate limit scenarios
+   - Memory constraints under load
+   - Service account authentication issues
+
+### Local Docker Testing Triggers
+- **Before BigQuery production deployment**: Validate end-to-end data pipeline
+- **Before performance optimization**: Test caching and connection pooling
+- **Before multi-service orchestration**: Validate service interactions
+
+### Current Recommendation: Defer Until Phase 2
+The application architecture is already validated through GitHub Actions. Local Docker testing becomes valuable when simulating BigQuery performance characteristics and multi-service interactions.
+
 ## Phase 5: Orchestration & Automation (HIGH PRIORITY)
 
 ### Objectives
@@ -311,19 +385,51 @@ This ensures production readiness of the final cloud-native architecture.
 CI/CD exists for application deployment, but data and ML pipelines need automation.
 
 ### Implementation Steps
-1. **Data Pipeline Automation**
-   - Create scheduled jobs for daily data ingestion from APIs
-   - Implement data quality monitoring with automated alerts
-   - Build incremental data processing to handle large datasets efficiently
-   - Add retry logic and error handling for API failures
+1. **Incremental Data Pipeline Automation - Trading Days Only**
+   - **Daily rolling window maintenance**: Append new day + delete oldest day
+   - **Trading calendar integration**: Only execute on NYSE/NASDAQ trading days
+   - **Weekend/holiday handling**: Skip processing on non-trading days
+   - **Cost optimization**: Process only 2 days worth of data daily vs full refresh
+   - **Scheduled jobs**: Cloud Functions or cron for automated execution
+   - **Data quality monitoring**: Automated alerts for data freshness and completeness
+   - **Retry logic**: Error handling for API failures and BigQuery timeouts
 
-2. **ML Pipeline Automation**
+2. **Data Ingestion Orchestration with Trading Calendar**
+   ```python
+   # Daily incremental update process - trading days only
+   import pandas_market_calendars as mcal
+   
+   class DailyDataMaintenance:
+       def __init__(self):
+           self.nyse = mcal.get_calendar('NYSE')
+           
+       def is_trading_day(self, date):
+           """Check if date is a NYSE trading day"""
+           schedule = self.nyse.schedule(start_date=date, end_date=date)
+           return not schedule.empty
+           
+       def maintain_rolling_window(self, symbol: str):
+           # Only execute on trading days
+           if not self.is_trading_day(datetime.now().date()):
+               return "Skipped: Not a trading day"
+               
+           # 1. Fetch latest trading day data
+           new_data = self.fetch_latest_data(symbol)
+           
+           # 2. Append new data
+           self.append_to_bigquery(new_data, symbol)
+           
+           # 3. Remove oldest data to maintain 2-year window
+           self.remove_oldest_data(symbol)
+   ```
+
+3. **ML Pipeline Automation**
    - Schedule weekly model retraining with new data
    - Implement automated model validation and A/B testing
    - Create model performance drift detection
    - Automate hyperparameter optimization experiments
 
-3. **Monitoring & Alerting Framework**
+4. **Monitoring & Alerting Framework**
    ```python
    # Example monitoring structure
    class SystemMonitor:
@@ -340,7 +446,7 @@ CI/CD exists for application deployment, but data and ML pipelines need automati
            pass
    ```
 
-4. **Operational Dashboards**
+5. **Operational Dashboards**
    - System health and performance metrics
    - Data pipeline status and lineage
    - Model performance tracking over time
