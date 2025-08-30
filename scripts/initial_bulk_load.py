@@ -364,6 +364,11 @@ def main():
         action="store_true",
         help="Load all available US stocks from Alpha Vantage",
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip confirmation prompt and proceed automatically",
+    )
 
     args = parser.parse_args()
 
@@ -388,14 +393,19 @@ def main():
 
         # Confirm before proceeding
         estimated_time = loader.rate_limiter.estimate_time_for_calls(len(symbols))
-        response = input(
-            f"\n⚠️ This will load 2 years of data for {len(symbols)} symbols.\n"
-            f"⏱️ Estimated time: {estimated_time:.1f} minutes ({estimated_time/60:.1f} hours)\n"
-            f"Continue? (y/N): "
-        )
-        if response.lower() != "y":
-            print("❌ Operation cancelled")
-            return
+        if not args.yes:
+            response = input(
+                f"\n⚠️ This will load 2 years of data for {len(symbols)} symbols.\n"
+                f"⏱️ Estimated time: {estimated_time:.1f} minutes ({estimated_time/60:.1f} hours)\n"
+                f"Continue? (y/N): "
+            )
+            if response.lower() != "y":
+                print("❌ Operation cancelled")
+                return
+        else:
+            print(f"\n⚠️ Loading 2 years of data for {len(symbols)} symbols.")
+            print(f"⏱️ Estimated time: {estimated_time:.1f} minutes ({estimated_time/60:.1f} hours)")
+            print("🚀 Auto-proceeding due to --yes flag")
 
         # Run bulk load
         loader.load_symbols_batch(symbols, args.batch_size)

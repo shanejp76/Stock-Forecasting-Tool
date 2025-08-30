@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # BigQuery configuration
-PROJECT_ID = "stock-forecasting-tool-prod"
+PROJECT_ID = "stock-forecasting-tool-2025"
 DATASET_ID = "stock_data"
 RAW_TABLE_ID = "raw_stock_data"
 INDICATORS_TABLE_ID = "technical_indicators"
