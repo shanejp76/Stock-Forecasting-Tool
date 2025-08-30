@@ -31,6 +31,68 @@ streamlit run main.py
 - **Docker**: For containerized deployment (recommended)
 - **Python 3.11**: For local development
 - **Git**: For version control
+- **Google Cloud**: For BigQuery data warehouse features
+
+## 🔐 Setup for New Development Environment
+
+### Required Files (Not in Git Repository)
+Due to security, some files are not stored in git and must be set up manually:
+
+- `credentials.json` - Google Cloud service account key for BigQuery access
+- `.env` - Environment variables with your API keys
+
+### Quick Setup Process
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/shanejp76/Stock-Forecasting-Tool.git
+   cd Stock-Forecasting-Tool
+   ```
+
+2. **Run the automated setup script**
+   ```bash
+   ./scripts/setup-dev.sh
+   ```
+
+3. **Set up Google Cloud credentials** (choose one option):
+   
+   **Option A: Copy from existing environment**
+   ```bash
+   # Copy credentials.json from another development machine
+   # (transfer securely - never email or store in unsecured locations)
+   ```
+   
+   **Option B: Generate new credentials**
+   ```bash
+   # Authenticate with Google Cloud
+   gcloud auth login
+   gcloud config set project stock-forecasting-tool-2025
+   
+   # Create new service account key
+   gcloud iam service-accounts keys create credentials.json \
+     --iam-account=stock-forecasting-sa@stock-forecasting-tool-2025.iam.gserviceaccount.com
+   ```
+
+4. **Configure API keys**
+   ```bash
+   # Edit .env file with your actual API keys
+   cp .env.example .env
+   # Add your Alpha Vantage and Finnhub API keys
+   ```
+
+5. **Test the setup**
+   ```bash
+   # Test application
+   streamlit run main.py
+   
+   # Test BigQuery connection
+   python3 scripts/initial_bulk_load.py --symbols AAPL --yes
+   ```
+
+### Security Notes
+- Never commit `credentials.json` to git (already in .gitignore)
+- Each development environment should ideally have its own service account key
+- Rotate credentials regularly
+- Store credentials securely when transferring between machines
 
 ## ✨ Features
 
