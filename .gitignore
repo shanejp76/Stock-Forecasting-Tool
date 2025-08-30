@@ -74,4 +74,8 @@ coverage.xml
 # mypy
 .mypy_cache/
 .dmypy.json
-dmypy.jsoncredentials.json
+dmypy.json
+
+# Google Cloud credentials
+credentials.json
+*.json
