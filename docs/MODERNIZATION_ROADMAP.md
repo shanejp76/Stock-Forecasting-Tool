@@ -1,4 +1,12 @@
-# Stock Forecasting Tool - Modernization Roadmap
+fix: resolve BigQuery project configuration mismatch and complete Phase 1 data infrastructure
+
+- Fixed .env and .env.example to use correct project (stock-forecasting-tool-prod)
+- Updated BigQuery client to read project from environment variables
+- Created dedicated conda environment (stock-forecasting) with Python 3.11
+- Resolved NumPy compatibility issues with correct version constraints
+- Added missing db-dtypes dependency for BigQuery data type conversion
+- Verified BigQuery connection with 324 symbols, 149,040 rows, 2+ years data
+- Updated roadmap to reflect completed Phase 1 BigQuery integration# Stock Forecasting Tool - Modernization Roadmap
 
 ## Overview
 This document outlines the transformation of the existing Streamlit-based stock forecasting application into a modern, production-ready analytics engineering platform. The modernization will introduce cloud data warehousing, proper data transformation pipelines, and full automation.
@@ -31,8 +39,9 @@ This document outlines the transformation of the existing Streamlit-based stock 
 - Separate data ingestion from application logic
 - Enable data lineage and auditability
 
-### Current Status: BIGQUERY INTEGRATION COMPLETE
+### Current Status: BIGQUERY INTEGRATION COMPLETE WITH DATA GAPS
 **RESOLVED** Project configuration mismatch - application now connected to correct data warehouse.
+**IDENTIFIED** Data coverage gaps requiring bulk ingestion completion.
 
 ### Implementation Steps
 1. **COMPLETED: Setup Google Cloud Environment**
@@ -63,11 +72,19 @@ This document outlines the transformation of the existing Streamlit-based stock 
    - **DONE**: Added missing dependency (db-dtypes) for BigQuery data type conversion
    - **DONE**: Verified BigQuery connection and data access functionality
 
-5. **READY: Application Integration**
-   - Modify `data_handler.py` to query BigQuery instead of direct API calls
-   - Maintain API fallback for testing and edge cases
-   - Test end-to-end functionality with BigQuery data source
-   - Validate forecasting models work with warehouse data
+5. **COMPLETED: Application Integration**
+   - **DONE**: Modified `data_handler.py` to include BigQuery hybrid loading
+   - **DONE**: Updated `ui_intro.py` with BigQuery toggle and source indicators
+   - **DONE**: Implemented graceful fallback to Alpha Vantage API
+   - **DONE**: Added user-selectable data source with visual feedback
+   - **TESTED**: End-to-end functionality verified (AAPL: 771 rows, $229.31 close)
+
+6. **IDENTIFIED: Data Coverage Gaps**
+   - **ISSUE**: Default symbol GOOG missing from BigQuery warehouse
+   - **IMPACT**: Users see "No data found in BigQuery for GOOG" message
+   - **WORKAROUND**: Alpha Vantage fallback functional for missing symbols
+   - **REQUIRED**: Complete bulk ingestion for popular symbols (GOOG, GOOGL, etc.)
+   - **PRIORITY**: HIGH - affects user first impression with default symbol
 
 3. **Raw Data Schema**
    ```sql
@@ -106,13 +123,31 @@ This document outlines the transformation of the existing Streamlit-based stock 
    - Test end-to-end functionality with BigQuery data source
    - Validate forecasting models work with warehouse data
 
-### Priority: COMPLETED - READY FOR PHASE 2
-Phase 1 BigQuery integration is complete. Historical data warehouse is operational with 324 symbols and 149,040 rows spanning 2+ years.
+### Priority: COMPLETED WITH DATA COVERAGE ISSUE
+Phase 1 BigQuery integration is complete with hybrid data source functionality. Historical data warehouse is operational but missing popular symbols like GOOG.
 
-**IMMEDIATE NEXT STEPS:**
-1. **Test Streamlit Application**: Run application with BigQuery data source instead of real-time API calls
-2. **Integrate Research Optimizations**: Bring proven winsorization and hyperparameter tuning from archive notebooks into production
-3. **Application Performance**: Implement enhanced caching strategies for BigQuery data
+**IMMEDIATE NEXT STEPS FOR NEXT SESSION:**
+1. **Complete Symbol Coverage** (HIGH PRIORITY):
+   - Run bulk ingestion for missing popular symbols (GOOG, GOOGL, META, TSLA, etc.)
+   - Verify Alpha Vantage API quotas and rate limits
+   - Prioritize symbols with high user interest and app defaults
+
+2. **Data Quality Validation**:
+   - Audit existing 324 symbols for data completeness
+   - Identify and fill date range gaps in historical data
+   - Implement automated data freshness monitoring
+
+3. **User Experience Enhancement**:
+   - Add symbol availability preview in UI (show which symbols have BigQuery data)
+   - Improve fallback messaging to be more informative
+   - Consider changing default symbol to one available in BigQuery (e.g., AAPL)
+
+**TECHNICAL STATUS:**
+- ✅ BigQuery integration: COMPLETE and operational
+- ✅ Hybrid data loading: COMPLETE with graceful fallback
+- ✅ Environment setup: COMPLETE with resolved dependencies  
+- ⚠️ Data coverage: PARTIAL (324/~3000 symbols, missing GOOG default)
+- ✅ Application functionality: COMPLETE with source selection UI
 
 ### Implementation Note: Foundation Complete - Ready for Advanced Features
 Phase 1 successfully established the data infrastructure foundation. The application can now leverage historical data for advanced analytics and forecasting without API rate limitations.

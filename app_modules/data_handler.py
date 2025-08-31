@@ -27,6 +27,103 @@ import requests
 from alpha_vantage.timeseries import TimeSeries
 import ta  # This is already imported and will be used for MACD and RSI
 from datetime import date, timedelta
+from app_modules.bigquery_client import get_bigquery_client
+
+
+@st.cache_data
+def load_bigquery_data(ticker: str, start_date: date) -> tuple[pd.DataFrame, str]:
+    """
+    Loads daily stock data from BigQuery data warehouse.
+    Returns tuple of (data, source) where source indicates data origin.
+    """
+    try:
+        # Initialize BigQuery client
+        bq_client = get_bigquery_client()
+        
+        # Convert start_date to string format for BigQuery
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        
+        # Query data from BigQuery
+        data = bq_client.query_stock_data(ticker, start_date_str)
+        
+        if not data.empty:
+            # Convert BigQuery data to match Alpha Vantage format
+            data = data.reset_index()  # Reset index to get 'date' as column
+            data.rename(columns={
+                'date': 'Date',
+                'open': 'Open',
+                'high': 'High', 
+                'low': 'Low',
+                'close': 'Close',
+                'adjusted_close': 'Adjusted Close',
+                'volume': 'Volume'
+            }, inplace=True)
+            
+            # Ensure Date column is datetime
+            data['Date'] = pd.to_datetime(data['Date'])
+            
+            # Sort by date (oldest first, like Alpha Vantage)
+            data = data.sort_values('Date').reset_index(drop=True)
+            
+            st.success(f"✅ Loaded {len(data)} rows from BigQuery warehouse for {ticker}")
+            return data, "bigquery"
+        else:
+            st.warning(f"No data found in BigQuery for {ticker}")
+            return pd.DataFrame(), "bigquery_empty"
+            
+    except Exception as e:
+        st.warning(f"BigQuery error for {ticker}: {e}")
+        return pd.DataFrame(), "bigquery_error"
+
+
+@st.cache_data
+def load_stock_data_hybrid(ticker: str, start_date: date, use_bigquery: bool = True, _ts_av: TimeSeries = None) -> tuple[pd.DataFrame, str]:
+    """
+    Loads stock data using hybrid approach: BigQuery first, Alpha Vantage fallback.
+    
+    Args:
+        ticker: Stock symbol
+        start_date: Start date for data
+        use_bigquery: Whether to try BigQuery first
+        _ts_av: Alpha Vantage TimeSeries client (prefixed with _ for Streamlit caching)
+    
+    Returns:
+        tuple: (DataFrame with stock data, source string)
+    """
+    data_source = "unknown"
+    
+    # Try BigQuery first if enabled
+    if use_bigquery:
+        data, data_source = load_bigquery_data(ticker, start_date)
+        if not data.empty:
+            return data, data_source
+    
+    # Fallback to Alpha Vantage
+    if _ts_av is not None:
+        st.info(f"📡 Falling back to Alpha Vantage API for {ticker}")
+        data = load_alpha_vantage_data(_ts_av, ticker)
+        if not data.empty:
+            return data, "alpha_vantage"
+    
+    # No data available from either source
+    st.error(f"No data available for {ticker} from any source")
+    return pd.DataFrame(), "no_data"
+
+
+@st.cache_data
+def load_bigquery_symbols() -> list[str]:
+    """
+    Load available symbols from BigQuery data warehouse.
+    Returns list of symbols with data.
+    """
+    try:
+        bq_client = get_bigquery_client()
+        symbols = bq_client.get_available_symbols()
+        st.info(f"📊 Found {len(symbols)} symbols in BigQuery warehouse")
+        return symbols
+    except Exception as e:
+        st.warning(f"Could not load BigQuery symbols: {e}")
+        return []
 
 
 @st.cache_data

@@ -25,6 +25,7 @@ from datetime import date, timedelta
 from app_modules.data_handler import (
     load_finnhub_tickers,
     load_alpha_vantage_data,
+    load_stock_data_hybrid,
     process_stock_data,
     calculate_stock_stats,
     determine_periods,
@@ -69,9 +70,18 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
     """
     st.subheader("-- Choose a Stock --")
     with st.expander("Click here to expand"):
-        selected_stock = st.text_input(
-            "Enter Symbol (Ticker List in Appendix)", value="goog"
-        ).upper()
+        # Add data source selection
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            selected_stock = st.text_input(
+                "Enter Symbol (Ticker List in Appendix)", value="goog"
+            ).upper()
+        with col2:
+            use_bigquery = st.checkbox(
+                "Use BigQuery", 
+                value=True, 
+                help="Use BigQuery data warehouse (faster, historical) or Alpha Vantage API (real-time, rate limited)"
+            )
 
         tickers, tickers_data = load_finnhub_tickers(FINNHUB_API_KEY, EXCHANGE_CODE)
 
@@ -84,9 +94,17 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
 
         data = pd.DataFrame()  # Initialize data to an empty DataFrame
         if selected_stock in tickers:
-            data = load_alpha_vantage_data(_ts_av=ts_av, ticker=selected_stock)
+            # Use hybrid data loading approach
+            data, data_source = load_stock_data_hybrid(
+                selected_stock, 
+                date.today() - timedelta(days=2 * 365),  # 2 years back
+                use_bigquery, 
+                ts_av
+            )
             if not data.empty:
-                data_load_state.text(f"-- {ticker_name} Data Loaded. --")
+                source_icon = "🏛️" if data_source == "bigquery" else "📡"
+                source_name = "BigQuery Warehouse" if data_source == "bigquery" else "Alpha Vantage API"
+                data_load_state.text(f"-- {ticker_name} Data Loaded from {source_icon} {source_name} --")
             else:
                 data_load_state.text(
                     f"-- Failed to load data for '{selected_stock}'. Please try again or check API limits. --"
