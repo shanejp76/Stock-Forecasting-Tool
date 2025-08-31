@@ -79,12 +79,12 @@ This document outlines the transformation of the existing Streamlit-based stock 
    - **DONE**: Added user-selectable data source with visual feedback
    - **TESTED**: End-to-end functionality verified (AAPL: 771 rows, $229.31 close)
 
-6. **IDENTIFIED: Data Coverage Gaps**
-   - **ISSUE**: Default symbol GOOG missing from BigQuery warehouse
-   - **IMPACT**: Users see "No data found in BigQuery for GOOG" message
-   - **WORKAROUND**: Alpha Vantage fallback functional for missing symbols
-   - **REQUIRED**: Complete bulk ingestion for popular symbols (GOOG, GOOGL, etc.)
-   - **PRIORITY**: HIGH - affects user first impression with default symbol
+6. **COMPLETED: Critical Symbol Addition**
+   - **RESOLVED**: Fixed bulk loading script API endpoint compatibility (free tier)
+   - **ADDED**: GOOG, AMZN, TSLA, META, NVDA to BigQuery warehouse
+   - **VERIFIED**: Default symbol GOOG now working from BigQuery
+   - **READY**: Full universe bulk loading prepared for execution on separate machine
+   - **STATUS**: 329 symbols loaded, ~9,000 remaining symbols ready for batch processing
 
 3. **Raw Data Schema**
    ```sql
@@ -126,27 +126,50 @@ This document outlines the transformation of the existing Streamlit-based stock 
 ### Priority: COMPLETED WITH DATA COVERAGE ISSUE
 Phase 1 BigQuery integration is complete with hybrid data source functionality. Historical data warehouse is operational but missing popular symbols like GOOG.
 
-**IMMEDIATE NEXT STEPS FOR NEXT SESSION:**
-1. **Complete Symbol Coverage** (HIGH PRIORITY):
-   - Run bulk ingestion for missing popular symbols (GOOG, GOOGL, META, TSLA, etc.)
-   - Verify Alpha Vantage API quotas and rate limits
-   - Prioritize symbols with high user interest and app defaults
+**IMMEDIATE NEXT STEPS FOR FULL DATA LOADING:**
 
-2. **Data Quality Validation**:
-   - Audit existing 324 symbols for data completeness
-   - Identify and fill date range gaps in historical data
-   - Implement automated data freshness monitoring
+**Prerequisites on Other Machine:**
+```bash
+# Setup environment
+git clone https://github.com/shanejp76/Stock-Forecasting-Tool.git
+cd Stock-Forecasting-Tool && git pull origin main
+conda create -n stock-forecasting python=3.11 -y
+conda activate stock-forecasting && pip install -r requirements.txt
 
-3. **User Experience Enhancement**:
-   - Add symbol availability preview in UI (show which symbols have BigQuery data)
-   - Improve fallback messaging to be more informative
-   - Consider changing default symbol to one available in BigQuery (e.g., AAPL)
+# Copy .env file with ALPHA_VANTAGE_API_KEY and GOOGLE_CLOUD_PROJECT
+# Copy Google Cloud service account key file
+export GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+```
+
+**Execute Full Universe Loading:**
+```bash
+conda activate stock-forecasting
+python scripts/initial_bulk_load.py --full-universe --yes
+```
+
+**Expected Results:**
+- Time: 2.5 hours automated loading
+- Total: ~9,329 symbols in BigQuery  
+- Progress: Live tracking with checkpointing
+- Resume: Automatic if interrupted
+
+**Post-Loading Verification:**
+```bash
+# Check final count
+python -c "from app_modules.bigquery_client import BigQueryClient; print(f'Symbols: {len(BigQueryClient().get_available_symbols())}')"
+
+# Test application
+streamlit run main.py
+```
+
+**Next Phase Ready:** Complete data foundation enables Phase 2 research integration and advanced analytics.
 
 **TECHNICAL STATUS:**
 - ✅ BigQuery integration: COMPLETE and operational
 - ✅ Hybrid data loading: COMPLETE with graceful fallback
 - ✅ Environment setup: COMPLETE with resolved dependencies  
-- ⚠️ Data coverage: PARTIAL (324/~3000 symbols, missing GOOG default)
+- ✅ Critical symbols: COMPLETE (GOOG, AMZN, TSLA, META, NVDA added)
+- 🔄 Full data coverage: READY for bulk loading (329/~9,329 symbols)
 - ✅ Application functionality: COMPLETE with source selection UI
 
 ### Implementation Note: Foundation Complete - Ready for Advanced Features
