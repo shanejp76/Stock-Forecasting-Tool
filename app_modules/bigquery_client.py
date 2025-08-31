@@ -21,13 +21,14 @@ from google.auth import default
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# BigQuery configuration
-PROJECT_ID = "stock-forecasting-tool-2025"
+# BigQuery configuration from environment
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "stock-forecasting-tool-prod")
 DATASET_ID = "stock_data"
 RAW_TABLE_ID = "raw_stock_data"
 INDICATORS_TABLE_ID = "technical_indicators"
@@ -196,20 +197,20 @@ class BigQueryClient:
             base_query += " ORDER BY date ASC"
 
             # Configure query parameters
-            job_config = bigquery.QueryJobConfig(
-                query_parameters=[
-                    bigquery.ScalarQueryParameter("symbol", "STRING", symbol),
-                ]
-            )
-
+            query_parameters = [
+                bigquery.ScalarQueryParameter("symbol", "STRING", symbol),
+            ]
+            
             if start_date:
-                job_config.query_parameters.append(
+                query_parameters.append(
                     bigquery.ScalarQueryParameter("start_date", "DATE", start_date)
                 )
             if end_date:
-                job_config.query_parameters.append(
+                query_parameters.append(
                     bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
                 )
+                
+            job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
 
             # Execute query
             result = self.client.query(base_query, job_config=job_config).to_dataframe()
