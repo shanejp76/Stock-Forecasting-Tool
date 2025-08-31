@@ -174,23 +174,25 @@ class BulkDataLoader:
             if sleep_time > 0:
                 print(f"    ⏱️ Rate limited: waited {sleep_time:.1f}s")
 
-            data, meta_data = self.ts_av.get_daily_adjusted(symbol, outputsize="full")
+            data, meta_data = self.ts_av.get_daily(symbol, outputsize="full")
 
             if data.empty:
                 print(f"  ⚠️ No data received for {symbol}")
                 return None
 
-            # Convert to DataFrame with proper column names
+            # Convert to DataFrame with proper column names for free tier API
             data.columns = [
                 "open",
-                "high",
+                "high", 
                 "low",
                 "close",
-                "adjusted_close",
                 "volume",
-                "dividend",
-                "split",
             ]
+            
+            # Add missing columns with default values for free tier
+            data["adjusted_close"] = data["close"]  # Use close as adjusted_close
+            data["dividend"] = 0.0
+            data["split"] = 1.0
             data.index.name = "date"
             data.reset_index(inplace=True)
             data["date"] = pd.to_datetime(data["date"]).dt.date
