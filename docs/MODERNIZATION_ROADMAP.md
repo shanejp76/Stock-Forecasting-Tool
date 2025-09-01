@@ -39,9 +39,10 @@ This document outlines the transformation of the existing Streamlit-based stock 
 - Separate data ingestion from application logic
 - Enable data lineage and auditability
 
-### Current Status: BIGQUERY INTEGRATION COMPLETE WITH DATA GAPS
-**RESOLVED** Project configuration mismatch - application now connected to correct data warehouse.
-**IDENTIFIED** Data coverage gaps requiring bulk ingestion completion.
+### Current Status: BIGQUERY DATA ACCESS WORKING - FORECASTING MODELS NEED FIXES
+**ACHIEVED** BigQuery integration successfully loading data (2017 rows for AAPL confirmed).
+**IDENTIFIED** Prophet model cross-validation parameters incompatible with BigQuery data structure.
+**NEXT** Fix forecasting model configuration for 2+ years daily data format.
 
 ### Implementation Steps
 1. **COMPLETED: Setup Google Cloud Environment**
@@ -564,7 +565,26 @@ Significant advanced features have been researched but need production integrati
 
 ### Immediate Next Steps
 
-#### 1. Cloud Infrastructure Setup (READY FOR DEPLOYMENT)
+#### 1. CRITICAL: Fix Prophet Model Cross-Validation Issues (HIGH PRIORITY)
+**IDENTIFIED DURING STREAMLIT TESTING**: BigQuery integration successful (2017 rows loaded for AAPL), but Prophet forecasting models failing with cross-validation errors.
+
+**Issue Details:**
+- Error: "Cross-validation failed: Less data than horizon after initial window"
+- Error: "Model object or forecast is empty"
+- Root cause: Prophet model parameters not optimized for BigQuery data structure/timeframe
+
+**Required Fixes:**
+- Adjust Prophet cross-validation parameters (initial, period, horizon)
+- Optimize model configuration for 2+ years of daily data (2017 rows)
+- Update forecasting pipeline to handle BigQuery data format
+- Test with multiple symbols to ensure consistent performance
+
+**Success Criteria:**
+- Prophet models execute without cross-validation errors
+- Forecasts generate successfully with BigQuery data
+- Model performance comparable to API-based approach
+
+#### 2. Cloud Infrastructure Setup (READY FOR DEPLOYMENT)
 The application is containerized and ready for Google Cloud deployment:
 
 ```bash

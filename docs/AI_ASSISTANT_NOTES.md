@@ -28,14 +28,37 @@
 - Provide context for domain-specific concepts
 - Explain the "why" behind technical decisions
 
+## Environment Setup Requirements
+
+### Development Environment Activation
+**CRITICAL: Always use environment activation scripts to prevent recurring issues**
+
+Before any development work or running commands:
+1. **Use activation script**: Run `activate_env.bat` or `.\activate_env.ps1`
+2. **Verify environment**: Script will check conda environment, Python packages, and BigQuery connection
+3. **Confirm ready state**: Look for "Ready for development!" message
+
+Available activation methods:
+- **Batch script**: `activate_env.bat` (double-click or run in terminal)
+- **PowerShell script**: `.\activate_env.ps1` (for VS Code integration)
+- **Environment check**: `python check_env.py` (verification only)
+
+### Common Commands After Activation
+- `python -m streamlit run main.py` - Launch Streamlit application
+- `python scripts/initial_bulk_load.py --help` - Bulk loading options
+- `python check_env.py` - Verify environment setup
+
+**Note**: This prevents the recurring issue of commands failing due to missing packages or wrong Python environment.
+
 ## Workflow Requirements
 
 ### Chat Session Startup
 When user says "read the notes file" or references this document:
 1. Read this file completely
 2. Review current project status from MODERNIZATION_ROADMAP.md
-3. Provide brief status summary focusing on next steps
-4. Ask what specific task they want to work on
+3. **Remind about environment activation** if user plans to run commands
+4. Provide brief status summary focusing on next steps
+5. Ask what specific task they want to work on
 
 ### Chat Session Closing
 When user indicates they are closing the chat:
