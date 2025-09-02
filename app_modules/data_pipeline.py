@@ -17,45 +17,48 @@ from .model_trainer import dynamic_winsorize
 def prepare_training_data(data, price_col, percentiles, train_period):
     """
     Prepare and process training data with winsorization.
-    
+
     Args:
         data: DataFrame with stock data
         price_col: Column name for price data
         percentiles: Tuple of percentiles for winsorization
         train_period: Number of days for training
-        
+
     Returns:
         DataFrame: Prepared training data
     """
     # Apply dynamic winsorization to raw data
     processed_data = dynamic_winsorize(data.copy(), price_col, percentiles=percentiles)
-    
+
     # Get training data
     df_train = processed_data[["Date", price_col, "winsorized"]].copy()
     df_train = df_train.rename(columns={"Date": "ds"})
-    
+
     if train_period <= len(df_train):
         df_train = df_train[-train_period:]
     else:
         # Silently adjust training period to available data length
         df_train = df_train
-        
+
     return df_train
 
 
-def setup_cross_validation_function(df_train, train_period, period_unit, forecast_period):
+def setup_cross_validation_function(
+    df_train, train_period, period_unit, forecast_period
+):
     """
     Setup cross-validation function with adaptive parameters based on data size.
-    
+
     Args:
         df_train: Training DataFrame
         train_period: Training period in days
         period_unit: Period unit for CV
         forecast_period: Forecast period in days
-        
+
     Returns:
         function: Cross-validation function
     """
+
     def run_cross_validation(model_name):
         try:
             # Balanced CV: 2-4 folds maximum for performance
@@ -104,26 +107,26 @@ def setup_cross_validation_function(df_train, train_period, period_unit, forecas
                 f"Cross-validation failed: {e}. This might happen if your data is too short for the chosen initial, period, or horizon."
             )
             return pd.DataFrame()
-    
+
     return run_cross_validation
 
 
 def merge_forecast_with_data(forecast, data, train_period):
     """
     Merge forecast data with actual data and technical indicators.
-    
+
     Args:
         forecast: DataFrame with forecast data
         data: DataFrame with actual stock data
         train_period: Training period for display consistency
-        
+
     Returns:
         DataFrame: Merged forecast and actual data
     """
     if forecast.empty or data.empty:
         st.error("Cannot merge empty forecast or data")
         st.stop()
-        
+
     # Limit historical data to match training period for visual consistency
     actual_display_days = min(train_period, len(data))
     display_data = data[-actual_display_days:]

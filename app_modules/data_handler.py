@@ -34,77 +34,90 @@ from app_modules.bigquery_client import get_bigquery_client
 def load_bigquery_data(ticker: str, start_date: date) -> tuple[pd.DataFrame, str]:
     """
     Loads daily stock data from BigQuery data warehouse.
+    Automatically limits data to exactly 500 most recent trading days to optimize Prophet performance.
     Returns tuple of (data, source) where source indicates data origin.
     """
     try:
         # Initialize BigQuery client
         bq_client = get_bigquery_client()
-        
-        # Convert start_date to string format for BigQuery
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        
-        # Query data from BigQuery
-        data = bq_client.query_stock_data(ticker, start_date_str)
-        
+
+        # Query all available data (no date limit initially)
+        data = bq_client.query_stock_data(ticker)
+
         if not data.empty:
             # Convert BigQuery data to match Alpha Vantage format
             data = data.reset_index()  # Reset index to get 'date' as column
-            data.rename(columns={
-                'date': 'Date',
-                'open': 'Open',
-                'high': 'High', 
-                'low': 'Low',
-                'close': 'Close',
-                'adjusted_close': 'Adjusted Close',
-                'volume': 'Volume'
-            }, inplace=True)
-            
+            data.rename(
+                columns={
+                    "date": "Date",
+                    "open": "Open",
+                    "high": "High",
+                    "low": "Low",
+                    "close": "Close",
+                    "adjusted_close": "Adjusted Close",
+                    "volume": "Volume",
+                },
+                inplace=True,
+            )
+
             # Ensure Date column is datetime
-            data['Date'] = pd.to_datetime(data['Date'])
-            
+            data["Date"] = pd.to_datetime(data["Date"])
+
             # Sort by date (oldest first, like Alpha Vantage)
-            data = data.sort_values('Date').reset_index(drop=True)
-            
-            st.success(f"✅ Loaded {len(data)} rows from BigQuery warehouse for {ticker}")
+            data = data.sort_values("Date").reset_index(drop=True)
+
+            # Limit to exactly 500 most recent trading days for Prophet optimization
+            # Skip start_date filtering here since it will be applied later in process_stock_data
+            if len(data) > 500:
+                data = data.tail(500).reset_index(drop=True)
+                st.info(
+                    f"📊 Limited to exactly 500 most recent trading days for {ticker} (Prophet optimization)"
+                )
+
+            st.success(
+                f"✅ Loaded exactly {len(data)} rows from BigQuery warehouse for {ticker}"
+            )
             return data, "bigquery"
         else:
             st.warning(f"No data found in BigQuery for {ticker}")
             return pd.DataFrame(), "bigquery_empty"
-            
+
     except Exception as e:
         st.warning(f"BigQuery error for {ticker}: {e}")
         return pd.DataFrame(), "bigquery_error"
 
 
 @st.cache_data
-def load_stock_data_hybrid(ticker: str, start_date: date, use_bigquery: bool = True, _ts_av: TimeSeries = None) -> tuple[pd.DataFrame, str]:
+def load_stock_data_hybrid(
+    ticker: str, start_date: date, use_bigquery: bool = True, _ts_av: TimeSeries = None
+) -> tuple[pd.DataFrame, str]:
     """
     Loads stock data using hybrid approach: BigQuery first, Alpha Vantage fallback.
-    
+
     Args:
         ticker: Stock symbol
         start_date: Start date for data
         use_bigquery: Whether to try BigQuery first
         _ts_av: Alpha Vantage TimeSeries client (prefixed with _ for Streamlit caching)
-    
+
     Returns:
         tuple: (DataFrame with stock data, source string)
     """
     data_source = "unknown"
-    
+
     # Try BigQuery first if enabled
     if use_bigquery:
         data, data_source = load_bigquery_data(ticker, start_date)
         if not data.empty:
             return data, data_source
-    
+
     # Fallback to Alpha Vantage
     if _ts_av is not None:
         st.info(f"📡 Falling back to Alpha Vantage API for {ticker}")
         data = load_alpha_vantage_data(_ts_av, ticker)
         if not data.empty:
             return data, "alpha_vantage"
-    
+
     # No data available from either source
     st.error(f"No data available for {ticker} from any source")
     return pd.DataFrame(), "no_data"
@@ -162,6 +175,7 @@ def load_finnhub_tickers(finnhub_api_key, exchange_code):
 def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
     """
     Loads daily stock data from Alpha Vantage.
+    Automatically limits data to exactly 500 most recent trading days to optimize Prophet performance.
     The `_ts_av` parameter is prefixed with an underscore to prevent Streamlit from hashing it,
     as TimeSeries objects are not hashable.
     """
@@ -174,6 +188,14 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
         # This ensures the 'Date' column is a proper datetime64[ns] dtype
         data["Date"] = pd.to_datetime(data["Date"])
         data["Adjusted Close"] = data["Close"]
+
+        # Limit to exactly 500 most recent trading days for Prophet optimization
+        if len(data) > 500:
+            data = data.tail(500).reset_index(drop=True)
+            st.info(
+                f"📊 Limited to exactly 500 most recent trading days for {ticker} (Prophet optimization)"
+            )
+
         return data
     except Exception as e:
         st.error(f"Error loading data for {ticker}: {e}")
@@ -186,18 +208,24 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
 def process_stock_data(data, start_date):
     """
     Processes and filters the raw stock data.
+    If data already has exactly 500 rows or less (indicating it was pre-limited for Prophet optimization),
+    skip date filtering to preserve the exact row count.
     """
     if data.empty:
         return pd.DataFrame()
 
-    # Ensure data['Date'] is already datetime64[ns] from load_alpha_vantage_data
-    # Convert start_date (which is a datetime.date object) to a pandas datetime object
-    # to ensure consistent data types for comparison.
-    start_date_ts = pd.to_datetime(start_date)
-
+    # Reverse data order (newest first to oldest first)
     data = data[::-1].reset_index(drop=True)
-    # Perform the comparison with the pandas datetime object
-    data = data[data["Date"] >= start_date_ts].reset_index(drop=True)
+
+    # Only apply date filtering if we have more than 500 rows
+    # This preserves the exact 500-row limit from load_bigquery_data/load_alpha_vantage_data
+    if len(data) > 500:
+        # Convert start_date (which is a datetime.date object) to a pandas datetime object
+        # to ensure consistent data types for comparison.
+        start_date_ts = pd.to_datetime(start_date)
+        # Perform the comparison with the pandas datetime object
+        data = data[data["Date"] >= start_date_ts].reset_index(drop=True)
+
     return data
 
 

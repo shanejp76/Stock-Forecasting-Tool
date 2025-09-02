@@ -1,0 +1,5 @@
+functions-framework==3.*
+google-cloud-bigquery==3.*
+pandas==2.*
+pandas-market-calendars==4.*
+requests==2.*
