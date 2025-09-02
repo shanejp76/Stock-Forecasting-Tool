@@ -199,7 +199,7 @@ class BigQueryManager:
             return
 
         # Add timestamp for when data was updated
-        df["updated_at"] = datetime.utcnow()
+        df["updated_at"] = pd.Timestamp.utcnow()
 
         # Convert date to proper format
         df["date"] = pd.to_datetime(df["date"]).dt.date
@@ -211,12 +211,7 @@ class BigQueryManager:
 
         try:
             # Load data to temporary table
-            job_config = bigquery.LoadJobConfig(
-                write_disposition="WRITE_TRUNCATE",
-                schema_update_options=[
-                    bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
-                ],
-            )
+            job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
 
             job = self.client.load_table_from_dataframe(
                 df, temp_table_id, job_config=job_config

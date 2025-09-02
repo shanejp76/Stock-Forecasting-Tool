@@ -3,3 +3,5 @@ google-cloud-bigquery==3.*
 pandas==2.*
 pandas-market-calendars==4.*
 requests==2.*
+pyarrow==17.*
+pandas-gbq==0.26.*

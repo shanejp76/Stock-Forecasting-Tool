@@ -66,7 +66,9 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
     """
     Handles stock selection UI and data loading/initial processing.
     Returns: selected_stock, ticker_name, data, stats, percentiles, volatility,
-             period_unit, forecast_period, train_period, tickers_data
+             period_unit, forecast_period, train_period, tickers_data,
+             trend_flexibility, seasonality_strength, changepoint_prior,
+             seasonality_prior, use_bigquery
     """
     st.subheader("-- Choose a Stock --")
     with st.expander("Click here to expand"):
@@ -78,9 +80,9 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             ).upper()
         with col2:
             use_bigquery = st.checkbox(
-                "Use BigQuery", 
-                value=True, 
-                help="Use BigQuery data warehouse (faster, historical) or Alpha Vantage API (real-time, rate limited)"
+                "Use BigQuery",
+                value=True,
+                help="Use BigQuery data warehouse (faster, historical) or Alpha Vantage API (real-time, rate limited)",
             )
 
         tickers, tickers_data = load_finnhub_tickers(FINNHUB_API_KEY, EXCHANGE_CODE)
@@ -96,15 +98,21 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
         if selected_stock in tickers:
             # Use hybrid data loading approach
             data, data_source = load_stock_data_hybrid(
-                selected_stock, 
+                selected_stock,
                 date.today() - timedelta(days=2 * 365),  # 2 years back
-                use_bigquery, 
-                ts_av
+                use_bigquery,
+                ts_av,
             )
             if not data.empty:
                 source_icon = "🏛️" if data_source == "bigquery" else "📡"
-                source_name = "BigQuery Warehouse" if data_source == "bigquery" else "Alpha Vantage API"
-                data_load_state.text(f"-- {ticker_name} Data Loaded from {source_icon} {source_name} --")
+                source_name = (
+                    "BigQuery Warehouse"
+                    if data_source == "bigquery"
+                    else "Alpha Vantage API"
+                )
+                data_load_state.text(
+                    f"-- {ticker_name} Data Loaded from {source_icon} {source_name} --"
+                )
             else:
                 data_load_state.text(
                     f"-- Failed to load data for '{selected_stock}'. Please try again or check API limits. --"
@@ -228,4 +236,5 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
         seasonality_strength,
         changepoint_prior,
         seasonality_prior,
+        use_bigquery,
     )

@@ -7,7 +7,7 @@ how closely the stock's movements align with the broader market, which is useful
 risk management and portfolio diversification analysis.
 
 Functions:
-    calculate_market_correlation(_ts_av, stock_data, market_ticker="SPY"):
+    calculate_market_correlation(_ts_av, stock_data, use_bigquery, market_ticker="SPY"):
         Calculates the correlation coefficient between the selected stock and the market index.
 
 Author: Shane
@@ -19,11 +19,15 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 from alpha_vantage.timeseries import TimeSeries
-from app_modules.data_handler import load_alpha_vantage_data  # We'll need this function
+from app_modules.data_handler import load_alpha_vantage_data, load_stock_data_hybrid
+from datetime import date, timedelta
 
 
 def calculate_market_correlation(
-    _ts_av: TimeSeries, stock_data: pd.DataFrame, market_ticker: str = "SPY"
+    _ts_av: TimeSeries,
+    stock_data: pd.DataFrame,
+    use_bigquery: bool = True,
+    market_ticker: str = "SPY",
 ) -> float:
     """
     Calculates the correlation between the selected stock and a market index (e.g., S&P 500).
@@ -32,6 +36,7 @@ def calculate_market_correlation(
         _ts_av: Initialized Alpha Vantage TimeSeries object.
         stock_data: DataFrame containing historical data for the selected stock,
                     must include 'Date' and 'Adjusted Close' columns.
+        use_bigquery: Boolean flag to determine data source (BigQuery vs Alpha Vantage).
         market_ticker: Ticker symbol for the market index (default is "SPY").
 
     Returns:
@@ -43,8 +48,13 @@ def calculate_market_correlation(
         )
         return None
 
-    # Load market index data
-    market_data = load_alpha_vantage_data(_ts_av, market_ticker)
+    # Load market index data using the hybrid approach (respects BigQuery toggle)
+    market_data, _ = load_stock_data_hybrid(
+        market_ticker,
+        date.today() - timedelta(days=2 * 365),  # 2 years back to match stock data
+        use_bigquery,
+        _ts_av,
+    )
 
     if market_data.empty or "Adjusted Close" not in market_data.columns:
         st.warning(

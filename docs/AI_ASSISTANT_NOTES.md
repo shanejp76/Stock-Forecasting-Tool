@@ -63,11 +63,13 @@ When user says "read the notes file" or references this document:
 ### Chat Session Closing
 When user indicates they are closing the chat:
 1. **Clean Up Temporary Files**: Delete or move test files, demo scripts, and temporary development files to maintain workspace organization
-2. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session
-3. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes
-4. **Update Requirements**: Update requirements.txt with any new Python packages installed
-5. **Environment Variables**: Update .env.example if new environment variables were added
+2. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session (PROVIDE THE ACTUAL COMMIT MESSAGE TEXT)
+3. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes (ALREADY COMPLETED IF DONE DURING SESSION)
+4. **Update Requirements**: Update requirements.txt with any new Python packages installed (CHECK IF ANY NEW PACKAGES WERE ADDED)
+5. **Environment Variables**: Update .env.example if new environment variables were added (CHECK IF ANY NEW ENV VARS WERE ADDED)
 6. **Summary**: Provide brief summary of accomplishments and next recommended steps
+
+IMPORTANT: Session details and continuation context should ONLY go in MODERNIZATION_ROADMAP.md, NOT in this AI_ASSISTANT_NOTES.md file.
 
 ### Change Management
 - Always use tools to make file changes rather than displaying code

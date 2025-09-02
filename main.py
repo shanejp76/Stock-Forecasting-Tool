@@ -85,6 +85,7 @@ display_welcome_expander()
     seasonality_strength,
     changepoint_prior,
     seasonality_prior,
+    use_bigquery,
 ) = display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av)
 
 # --- Process Technical Indicators ---
@@ -98,7 +99,9 @@ data = process_technical_indicators(data, price_col)
 df_train = prepare_training_data(data, price_col, percentiles, train_period)
 
 # --- Setup Cross-Validation Function ---
-run_cross_validation = setup_cross_validation_function(df_train, train_period, period_unit, forecast_period)
+run_cross_validation = setup_cross_validation_function(
+    df_train, train_period, period_unit, forecast_period
+)
 
 # --- Determine Optimization Strategy ---
 optimization_mode, all_params, user_modified_params = determine_optimization_strategy(
@@ -106,8 +109,10 @@ optimization_mode, all_params, user_modified_params = determine_optimization_str
 )
 
 # --- Execute Model Training Pipeline ---
-m, scores_df, forecast, best_params_dict, forecast_summary, chosen_approach = execute_training_pipeline(
-    df_train, price_col, all_params, forecast_period, run_cross_validation
+m, scores_df, forecast, best_params_dict, forecast_summary, chosen_approach = (
+    execute_training_pipeline(
+        df_train, price_col, all_params, forecast_period, run_cross_validation
+    )
 )
 
 # --- Merge Forecast with Data ---
@@ -120,8 +125,10 @@ scores_df = format_scores_dataframe(scores_df)
 market_correlation = None
 if not data.empty:
     with st.spinner("Calculating market correlation..."):
-        # Pass the _ts_av object (which is the TimeSeries client) and the stock's data
-        market_correlation = calculate_market_correlation(ts_av, data.copy())
+        # Pass the _ts_av object, stock data, and use_bigquery flag
+        market_correlation = calculate_market_correlation(
+            ts_av, data.copy(), use_bigquery
+        )
 
 
 # --- Calling plot_forecast ---
