@@ -45,8 +45,22 @@ def load_bigquery_data(ticker: str, start_date: date) -> tuple[pd.DataFrame, str
         data = bq_client.query_stock_data(ticker)
 
         if not data.empty:
-            # Convert BigQuery data to match Alpha Vantage format
-            data = data.reset_index()  # Reset index to get 'date' as column
+            # First reset index to make 'date' a column for deduplication
+            data = data.reset_index()
+
+            # CRITICAL FIX: Remove duplicate entries before processing
+            initial_rows = len(data)
+            data = data.drop_duplicates(subset=["date"], keep="last")
+            deduplicated_rows = len(data)
+
+            if initial_rows > deduplicated_rows:
+                duplicates_removed = initial_rows - deduplicated_rows
+                st.warning(
+                    f"🔧 Removed {duplicates_removed} duplicate entries for {ticker} "
+                    f"({initial_rows} → {deduplicated_rows} rows)"
+                )
+
+            # Convert BigQuery data to match Alpha Vantage format (data already reset above)
             data.rename(
                 columns={
                     "date": "Date",
