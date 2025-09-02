@@ -55,10 +55,7 @@ def load_bigquery_data(ticker: str, start_date: date) -> tuple[pd.DataFrame, str
 
             if initial_rows > deduplicated_rows:
                 duplicates_removed = initial_rows - deduplicated_rows
-                st.warning(
-                    f"🔧 Removed {duplicates_removed} duplicate entries for {ticker} "
-                    f"({initial_rows} → {deduplicated_rows} rows)"
-                )
+                # Duplicate entries removed silently
 
             # Convert BigQuery data to match Alpha Vantage format (data already reset above)
             data.rename(
@@ -84,13 +81,7 @@ def load_bigquery_data(ticker: str, start_date: date) -> tuple[pd.DataFrame, str
             # Skip start_date filtering here since it will be applied later in process_stock_data
             if len(data) > 500:
                 data = data.tail(500).reset_index(drop=True)
-                st.info(
-                    f"📊 Limited to exactly 500 most recent trading days for {ticker} (Prophet optimization)"
-                )
 
-            st.success(
-                f"✅ Loaded exactly {len(data)} rows from BigQuery warehouse for {ticker}"
-            )
             return data, "bigquery"
         else:
             st.warning(f"No data found in BigQuery for {ticker}")
@@ -127,7 +118,7 @@ def load_stock_data_hybrid(
 
     # Fallback to Alpha Vantage
     if _ts_av is not None:
-        st.info(f"📡 Falling back to Alpha Vantage API for {ticker}")
+        # Falling back to Alpha Vantage API
         data = load_alpha_vantage_data(_ts_av, ticker)
         if not data.empty:
             return data, "alpha_vantage"
@@ -146,7 +137,7 @@ def load_bigquery_symbols() -> list[str]:
     try:
         bq_client = get_bigquery_client()
         symbols = bq_client.get_available_symbols()
-        st.info(f"📊 Found {len(symbols)} symbols in BigQuery warehouse")
+        # Found symbols in BigQuery warehouse
         return symbols
     except Exception as e:
         st.warning(f"Could not load BigQuery symbols: {e}")
@@ -206,9 +197,7 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
         # Limit to exactly 500 most recent trading days for Prophet optimization
         if len(data) > 500:
             data = data.tail(500).reset_index(drop=True)
-            st.info(
-                f"📊 Limited to exactly 500 most recent trading days for {ticker} (Prophet optimization)"
-            )
+            # Limited to 500 most recent trading days for optimization
 
         return data
     except Exception as e:

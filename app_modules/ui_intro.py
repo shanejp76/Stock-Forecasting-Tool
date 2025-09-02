@@ -104,15 +104,8 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
                 ts_av,
             )
             if not data.empty:
-                source_icon = "🏛️" if data_source == "bigquery" else "📡"
-                source_name = (
-                    "BigQuery Warehouse"
-                    if data_source == "bigquery"
-                    else "Alpha Vantage API"
-                )
-                data_load_state.text(
-                    f"-- {ticker_name} Data Loaded from {source_icon} {source_name} --"
-                )
+                # Data loaded successfully
+                data_load_state.empty()  # Clear the loading message
             else:
                 data_load_state.text(
                     f"-- Failed to load data for '{selected_stock}'. Please try again or check API limits. --"
