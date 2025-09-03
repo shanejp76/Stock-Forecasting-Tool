@@ -89,7 +89,17 @@ display_welcome_expander()
 ) = display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av)
 
 # --- Process Technical Indicators ---
-price_col = "Adjusted Close"  # Define price_col here since it's used in data processing
+# Define price_col based on available columns - PRIORITIZE UNADJUSTED CLOSE for swing trading
+if "Close" in data.columns:
+    price_col = "Close"
+elif "close" in data.columns:
+    price_col = "close"
+elif "adjusted_close" in data.columns:
+    price_col = "adjusted_close"
+else:
+    price_col = "close"  # Default fallback to snake_case
+
+st.info(f"Using price column: **{price_col}** for modeling and analysis")
 data = process_technical_indicators(data, price_col)
 
 
@@ -135,7 +145,7 @@ if not data.empty:
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
 # --- UI: Display Forecast Summary Statements ---
-display_forecast_summary(forecast_df, data, selected_stock, scores_df)
+display_forecast_summary(forecast_df, data, selected_stock, scores_df, price_col)
 
 # --- UI: Accuracy Metrics ---
 display_accuracy_metrics(scores_df)
@@ -145,7 +155,9 @@ st.markdown("---")
 
 # --- UI: Business Intelligence KPIs ---
 # UPDATED CALL: Pass market_correlation to display_business_kpis
-display_business_kpis(forecast_df, data, stats, volatility, market_correlation)
+display_business_kpis(
+    forecast_df, data, stats, volatility, market_correlation, price_col
+)
 
 # --- UI: Model Iterations and Performance ---
 display_model_performance(

@@ -11,6 +11,10 @@ import sys
 import os
 from pathlib import Path
 
+# Add project root to Python path for module imports
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 
 def check_python_version():
     """Check Python version compatibility"""
@@ -46,7 +50,7 @@ def check_required_packages():
         ("google.cloud.bigquery", "Google BigQuery client"),
         ("pandas", "Data manipulation library"),
         ("numpy", "Numerical computing library"),
-        ("python_dotenv", "Environment variable loading"),
+        ("dotenv", "Environment variable loading (python-dotenv)"),
     ]
 
     all_available = True

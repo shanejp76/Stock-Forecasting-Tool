@@ -130,7 +130,16 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             )
             st.stop()
 
-        price_col = "Adjusted Close"
+        # Use unadjusted Close for swing trading analysis
+        if "Close" in data.columns:
+            price_col = "Close"
+        elif "close" in data.columns:
+            price_col = "close"
+        elif "adjusted_close" in data.columns:
+            price_col = "adjusted_close"
+        else:
+            price_col = "close"  # Default fallback to snake_case
+
         stats, percentiles, volatility = calculate_stock_stats(
             data, selected_stock, price_col
         )

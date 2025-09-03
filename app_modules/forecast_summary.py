@@ -21,7 +21,9 @@ import streamlit as st
 import pandas as pd
 
 
-def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
+def display_forecast_summary(
+    forecast_df, data, selected_stock, scores_df=None, price_col="Close"
+):
     """
     Displays an adaptive forecast summary for the selected stock.
     Shows forecast for 10 days if available, otherwise shows the maximum available forecast period.
@@ -39,7 +41,13 @@ def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
         preferred_target_day = 10  # Preferred forecast day
 
         # Find the actual forecast data (after historical data ends)
-        last_actual_date = data["Date"].max()
+        # Handle date being in index or column
+        if "Date" in data.columns:
+            last_actual_date = data["Date"].max()
+        else:
+            # Date is in the index
+            last_actual_date = data.index.max()
+
         forecast_only_df = forecast_df[forecast_df["Date"] > last_actual_date]
 
         if len(forecast_only_df) > 0:
@@ -70,7 +78,7 @@ def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
             confidence_lower_val = forecast_row["yhat_lower"]
             confidence_upper_val = forecast_row["yhat_upper"]
 
-            last_actual_price = data["Adjusted Close"].iloc[-1]
+            last_actual_price = data[price_col].iloc[-1]
             trend_percentage_val = (
                 (forecast_price_val - last_actual_price) / last_actual_price
             ) * 100

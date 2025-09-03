@@ -35,16 +35,19 @@ def calculate_market_correlation(
     Args:
         _ts_av: Initialized Alpha Vantage TimeSeries object.
         stock_data: DataFrame containing historical data for the selected stock,
-                    must include 'Date' and 'Adjusted Close' columns.
+                    must include 'Date' and 'Close' columns.
         use_bigquery: Boolean flag to determine data source (BigQuery vs Alpha Vantage).
         market_ticker: Ticker symbol for the market index (default is "SPY").
 
     Returns:
         The correlation coefficient as a float, or None if data is insufficient.
     """
-    if stock_data.empty or "Adjusted Close" not in stock_data.columns:
+    # Determine the price column to use
+    price_col = "Close" if "Close" in stock_data.columns else "close"
+
+    if stock_data.empty or price_col not in stock_data.columns:
         st.warning(
-            "Stock data is empty or 'Adjusted Close' column missing for correlation calculation."
+            f"Stock data is empty or '{price_col}' column missing for correlation calculation."
         )
         return None
 
@@ -56,21 +59,40 @@ def calculate_market_correlation(
         _ts_av,
     )
 
-    if market_data.empty or "Adjusted Close" not in market_data.columns:
+    # Determine the price column for market data
+    market_price_col = "Close" if "Close" in market_data.columns else "close"
+
+    if market_data.empty or market_price_col not in market_data.columns:
         st.warning(
             f"Could not load market data for {market_ticker} for correlation calculation."
         )
         return None
 
-    # Merge dataframes on 'Date'
-    # Ensure 'Date' columns are datetime objects for proper merging
-    stock_data["Date"] = pd.to_datetime(stock_data["Date"])
-    market_data["Date"] = pd.to_datetime(market_data["Date"])
+    # Merge dataframes on date
+    # Handle different date column structures (index vs column) - keep snake_case internally
+    if stock_data.index.name == "date" or isinstance(
+        stock_data.index, pd.DatetimeIndex
+    ):
+        stock_data = stock_data.reset_index()
+
+    if market_data.index.name == "date" or isinstance(
+        market_data.index, pd.DatetimeIndex
+    ):
+        market_data = market_data.reset_index()
+
+    # Ensure 'date' columns exist and are datetime objects for proper merging
+    if "date" not in stock_data.columns:
+        stock_data["date"] = stock_data.index
+    if "date" not in market_data.columns:
+        market_data["date"] = market_data.index
+
+    stock_data["date"] = pd.to_datetime(stock_data["date"])
+    market_data["date"] = pd.to_datetime(market_data["date"])
 
     merged_data = pd.merge(
-        stock_data[["Date", "Adjusted Close"]],
-        market_data[["Date", "Adjusted Close"]],
-        on="Date",
+        stock_data[["date", price_col]],
+        market_data[["date", market_price_col]],
+        on="date",
         how="inner",
         suffixes=("_stock", "_market"),
     )
@@ -82,8 +104,10 @@ def calculate_market_correlation(
         return None
 
     # Calculate daily returns
-    merged_data["stock_returns"] = merged_data["Adjusted Close_stock"].pct_change()
-    merged_data["market_returns"] = merged_data["Adjusted Close_market"].pct_change()
+    merged_data["stock_returns"] = merged_data[f"{price_col}_stock"].pct_change()
+    merged_data["market_returns"] = merged_data[
+        f"{market_price_col}_market"
+    ].pct_change()
 
     # Drop NaN values from returns (first row will be NaN)
     merged_data.dropna(inplace=True)

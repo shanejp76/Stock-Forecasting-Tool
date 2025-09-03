@@ -30,9 +30,13 @@ def prepare_training_data(data, price_col, percentiles, train_period):
     # Apply dynamic winsorization to raw data
     processed_data = dynamic_winsorize(data.copy(), price_col, percentiles=percentiles)
 
-    # Get training data
-    df_train = processed_data[["Date", price_col, "winsorized"]].copy()
-    df_train = df_train.rename(columns={"Date": "ds"})
+    # Reset index to get date as a column (BigQuery data has date as index)
+    processed_data = processed_data.reset_index()
+
+    # Get training data - handle both "Date" and "date" column names
+    date_col = "Date" if "Date" in processed_data.columns else "date"
+    df_train = processed_data[[date_col, price_col, "winsorized"]].copy()
+    df_train = df_train.rename(columns={date_col: "ds"})
 
     if train_period <= len(df_train):
         df_train = df_train[-train_period:]
@@ -129,31 +133,49 @@ def merge_forecast_with_data(forecast, data, train_period):
 
     # Limit historical data to match training period for visual consistency
     actual_display_days = min(train_period, len(data))
-    display_data = data[-actual_display_days:]
+    display_data = data[-actual_display_days:].copy()
+
+    # Ensure date is in a column for merge
+    if "Date" not in display_data.columns:
+        display_data = display_data.reset_index()
+        # Handle both 'Date' and 'date' column names
+        if "date" in display_data.columns and "Date" not in display_data.columns:
+            display_data = display_data.rename(columns={"date": "Date"})
 
     forecast_df = pd.merge(
         left=display_data, right=forecast, right_on="ds", left_on="Date", how="right"
-    )[
-        [
-            "ds",
-            "Adjusted Close",
-            "yhat",
-            "yhat_lower",
-            "yhat_upper",
-            "SMA50",
-            "bb_upper",
-            "bb_lower",
-            "SMA20",
-            "SMA100",
-            "SMA200",
-            "GoldenCross_Signal",
-            "DeathCross_Signal",
-            "RSI",
-            "MACD",
-            "MACD_Signal",
-            "MACD_Hist",
-            "Volume",
-        ]
+    )
+
+    # Select only columns that actually exist in the merged DataFrame
+    available_cols = ["ds", "yhat", "yhat_lower", "yhat_upper"]
+
+    # Add optional columns if they exist (keep snake_case for internal processing)
+    optional_cols = [
+        "close",  # Primary price column
+        "adjusted_close",  # Secondary price column
+        "SMA50",
+        "bb_upper",
+        "bb_lower",
+        "SMA20",
+        "SMA100",
+        "SMA200",
+        "GoldenCross_Signal",
+        "DeathCross_Signal",
+        "RSI",
+        "MACD",
+        "MACD_Signal",
+        "MACD_Hist",
+        "volume",  # Use snake_case internally
     ]
-    forecast_df.rename(columns={"ds": "Date"}, inplace=True)
+
+    for col in optional_cols:
+        if col in forecast_df.columns:
+            available_cols.append(col)
+
+    forecast_df = forecast_df[available_cols]
+    # Convert ds to lowercase date column for consistent chart usage
+    forecast_df.rename(columns={"ds": "date"}, inplace=True)
+
+    # Also create uppercase Date for backward compatibility
+    forecast_df["Date"] = forecast_df["date"]
     return forecast_df

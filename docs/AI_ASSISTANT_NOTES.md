@@ -28,6 +28,39 @@
 - Provide context for domain-specific concepts
 - Explain the "why" behind technical decisions
 
+## Coding Conventions and Style Preferences
+
+### Column Naming Standards
+**CRITICAL: Follow strict snake_case conventions for all internal data processing**
+
+**Internal Data (ALL code, processing, analysis):**
+- Use **snake_case** for all column names in DataFrames, variables, and data structures
+- Examples: `date`, `close`, `high`, `low`, `volume`, `adjusted_close`
+- Database columns (BigQuery) use snake_case format
+- All modeling and analysis code should use snake_case
+
+**UI Display Only:**
+- Convert to **Proper Case** ONLY for user-facing elements (charts, tables, labels)
+- Examples: `Date`, `Close`, `High`, `Low`, `Volume`, `Adjusted Close` 
+- Use `prepare_data_for_display()` function in `chart_layout.py` for conversion
+- Chart axes, legends, and UI labels should show Proper Case
+
+**Implementation Guidelines:**
+- Internal processing: `data["close"]`, `data["date"]`, `data["volume"]`
+- Chart display: Convert using utility function before displaying
+- Never mix naming conventions within the same operation
+- Data pipeline maintains snake_case throughout processing chain
+
+**Price Column Priority for Modeling:**
+- Prioritize unadjusted `close` over `adjusted_close` for swing trading analysis
+- Use `close` column for all modeling and forecasting
+- Only use `adjusted_close` if `close` is unavailable
+
+### Code Organization Principles
+- Maintain separation between data logic (snake_case) and presentation (Proper Case)
+- Use utility functions for consistent naming conversions
+- Document any deviations from snake_case convention with clear reasoning
+
 ## Environment Setup Requirements
 
 ### Development Environment Activation
