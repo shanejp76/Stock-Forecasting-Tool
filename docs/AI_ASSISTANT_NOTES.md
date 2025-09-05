@@ -39,15 +39,17 @@
 - Database columns (BigQuery) use snake_case format
 - All modeling and analysis code should use snake_case
 
-**UI Display Only:**
-- Convert to **Proper Case** ONLY for user-facing elements (charts, tables, labels)
+**UI Display DataFrames and Elements:**
+- Convert to **Title Case** for DataFrames that appear directly in the UI (st.dataframe, st.table)
+- Convert to **Title Case** for user-facing chart elements (axes, legends, labels)
 - Examples: `Date`, `Close`, `High`, `Low`, `Volume`, `Adjusted Close` 
 - Use `prepare_data_for_display()` function in `chart_layout.py` for conversion
-- Chart axes, legends, and UI labels should show Proper Case
+- Apply Title Case conversion only at the final display step, not during processing
 
 **Implementation Guidelines:**
 - Internal processing: `data["close"]`, `data["date"]`, `data["volume"]`
-- Chart display: Convert using utility function before displaying
+- UI display DataFrames: Convert using utility function before displaying with st.dataframe() or st.table()
+- Chart display: Convert using utility function before displaying in charts
 - Never mix naming conventions within the same operation
 - Data pipeline maintains snake_case throughout processing chain
 
@@ -57,8 +59,9 @@
 - Only use `adjusted_close` if `close` is unavailable
 
 ### Code Organization Principles
-- Maintain separation between data logic (snake_case) and presentation (Proper Case)
+- Maintain separation between data logic (snake_case) and presentation (Title Case)
 - Use utility functions for consistent naming conversions
+- Apply Title Case conversion only at the final display step for UI DataFrames and charts
 - Document any deviations from snake_case convention with clear reasoning
 
 ## Environment Setup Requirements
@@ -96,11 +99,12 @@ When user says "read the notes file" or references this document:
 ### Chat Session Closing
 When user indicates they are closing the chat:
 1. **Clean Up Temporary Files**: Delete or move test files, demo scripts, and temporary development files to maintain workspace organization
-2. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session (PROVIDE THE ACTUAL COMMIT MESSAGE TEXT IN CHAT - DO NOT CREATE FILES FOR COMMIT MESSAGES)
-3. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes (ALREADY COMPLETED IF DONE DURING SESSION)
-4. **Update Requirements**: Update requirements.txt with any new Python packages installed (CHECK IF ANY NEW PACKAGES WERE ADDED)
-5. **Environment Variables**: Update .env.example if new environment variables were added (CHECK IF ANY NEW ENV VARS WERE ADDED)
-6. **Summary**: Provide brief summary of accomplishments and next recommended steps
+2. **Check Script Length**: If any scripts we worked on exceed 300 lines, ask user if they want to refactor them for better maintainability
+3. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session (PROVIDE THE ACTUAL COMMIT MESSAGE TEXT IN CHAT - DO NOT CREATE FILES FOR COMMIT MESSAGES)
+4. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes (ALREADY COMPLETED IF DONE DURING SESSION)
+5. **Update Requirements**: Update requirements.txt with any new Python packages installed (CHECK IF ANY NEW PACKAGES WERE ADDED)
+6. **Environment Variables**: Update .env.example if new environment variables were added (CHECK IF ANY NEW ENV VARS WERE ADDED)
+7. **Summary**: Provide brief summary of accomplishments and next recommended steps
 
 IMPORTANT: Session details and continuation context should ONLY go in MODERNIZATION_ROADMAP.md, NOT in this AI_ASSISTANT_NOTES.md file.
 
