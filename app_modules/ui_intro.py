@@ -152,12 +152,9 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
                 "Current Price",
                 "Current Volume",
                 "Daily % Change",
-                "YTD % Change",
                 "Annualized Volatility",
                 "52-Week High",
                 "52-Week Low",
-                "Earliest Data Date",
-                "Last Data Date",
             ]
             existing_ordered_columns = [
                 col

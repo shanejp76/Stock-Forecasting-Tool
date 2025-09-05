@@ -181,12 +181,23 @@ def add_forecast_traces(fig: go.Figure, data: pd.DataFrame) -> None:
         fig: Plotly figure to add traces to
         data: DataFrame containing forecast data
     """
+    # Determine the date column name - check all possible variants
+    date_col = None
+    for col_name in ["ds", "date", "Date"]:
+        if col_name in data.columns:
+            date_col = col_name
+            break
+    
+    # If no date column found, skip forecast traces
+    if date_col is None:
+        return
+    
     # Forecast confidence interval
     if "yhat_lower" in data.columns and "yhat_upper" in data.columns:
         # Lower bound
         fig.add_trace(
             go.Scatter(
-                x=data["date"],
+                x=data[date_col],
                 y=data["yhat_lower"],
                 line=dict(color="lightblue", width=0),
                 name="Forecast Lower Bound",
@@ -197,7 +208,7 @@ def add_forecast_traces(fig: go.Figure, data: pd.DataFrame) -> None:
         # Upper bound with fill
         fig.add_trace(
             go.Scatter(
-                x=data["date"],
+                x=data[date_col],
                 y=data["yhat_upper"],
                 line=dict(color="lightblue", width=0),
                 name="Forecast Upper Bound",
@@ -214,7 +225,7 @@ def add_forecast_traces(fig: go.Figure, data: pd.DataFrame) -> None:
     if "yhat" in data.columns:
         fig.add_trace(
             go.Scatter(
-                x=data["date"],
+                x=data[date_col],
                 y=data["yhat"],
                 line=dict(color="blue", width=2),
                 name="Forecast",

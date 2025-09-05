@@ -20,6 +20,38 @@ from plotly import graph_objs as go
 from typing import Optional
 
 
+def _get_date_column(data: pd.DataFrame) -> str:
+    """
+    Detect the appropriate date column from the DataFrame.
+    
+    Args:
+        data: DataFrame to check for date columns
+        
+    Returns:
+        Name of the date column to use
+        
+    Raises:
+        ValueError: If no suitable date column is found
+    """
+    # Check for common date column names (case-insensitive)
+    possible_date_cols = ['date', 'Date', 'DATE', 'ds', 'DS', 'timestamp', 'Timestamp']
+    
+    for col in possible_date_cols:
+        if col in data.columns:
+            return col
+    
+    # If no standard date column found, look for columns with datetime type
+    for col in data.columns:
+        if pd.api.types.is_datetime64_any_dtype(data[col]):
+            return col
+    
+    # If still no date column found, check if index is datetime
+    if pd.api.types.is_datetime64_any_dtype(data.index):
+        return data.index.name or 'index'
+    
+    raise ValueError("No suitable date column found in the data")
+
+
 def add_rsi_to_subplot(fig: go.Figure, data: pd.DataFrame, row: int = 2) -> None:
     """
     Add RSI indicator to a subplot.

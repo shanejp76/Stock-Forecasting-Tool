@@ -47,19 +47,23 @@ def calculate_stock_stats(
 
     # Calculate volatility-based winsorization percentiles (tuple format)
     winsorization_percentiles = get_volatility_based_percentiles(
-        volatility_metrics.get("volatility", 0.0)
+        volatility_metrics.get("Annualized Volatility", 0.0)
     )
 
     # Combine all statistics
     stats = {
         **price_stats,
         **volatility_metrics,
-        "symbol": selected_stock,
+        "Symbol": selected_stock,
         "data_points": len(data),
         "date_range": f"{data.index.min().strftime('%Y-%m-%d')} to {data.index.max().strftime('%Y-%m-%d')}",
     }
 
-    return stats, winsorization_percentiles, volatility_metrics.get("volatility", 0.0)
+    return (
+        stats,
+        winsorization_percentiles,
+        volatility_metrics.get("Annualized Volatility", 0.0),
+    )
 
 
 def calculate_price_statistics(data: pd.DataFrame, price_col: str) -> Dict[str, Any]:
@@ -80,6 +84,11 @@ def calculate_price_statistics(data: pd.DataFrame, price_col: str) -> Dict[str, 
 
     # Basic statistics
     current_price = prices.iloc[-1] if len(prices) > 0 else np.nan
+    current_volume = (
+        data["volume"].iloc[-1]
+        if len(data) > 0 and "volume" in data.columns
+        else np.nan
+    )
     price_change = prices.iloc[-1] - prices.iloc[0] if len(prices) > 1 else 0
     price_change_pct = (
         (price_change / prices.iloc[0] * 100)
@@ -88,11 +97,12 @@ def calculate_price_statistics(data: pd.DataFrame, price_col: str) -> Dict[str, 
     )
 
     return {
-        "current_price": current_price,
+        "Current Price": current_price,
+        "Current Volume": current_volume,
         "price_change": price_change,
-        "price_change_percent": price_change_pct,
-        "min_price": prices.min(),
-        "max_price": prices.max(),
+        "Daily % Change": price_change_pct,
+        "52-Week Low": prices.min(),
+        "52-Week High": prices.max(),
         "mean_price": prices.mean(),
         "median_price": prices.median(),
         "price_std": prices.std(),
@@ -129,7 +139,7 @@ def calculate_volatility_metrics(
 
     # Additional volatility measures
     volatility_metrics = {
-        "volatility": annualized_volatility,
+        "Annualized Volatility": annualized_volatility,
         "daily_volatility": daily_volatility,
         "returns_mean": returns.mean(),
         "returns_std": returns.std(),

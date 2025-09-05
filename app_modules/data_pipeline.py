@@ -173,9 +173,10 @@ def merge_forecast_with_data(forecast, data, train_period):
             available_cols.append(col)
 
     forecast_df = forecast_df[available_cols]
-    # Convert ds to lowercase date column for consistent chart usage
-    forecast_df.rename(columns={"ds": "date"}, inplace=True)
-
-    # Also create uppercase Date for backward compatibility
-    forecast_df["Date"] = forecast_df["date"]
+    
+    # Convert ds to lowercase date column for consistent chart usage (only if ds exists)
+    if "ds" in forecast_df.columns:
+        forecast_df.rename(columns={"ds": "date"}, inplace=True)
+        # Also create uppercase Date for backward compatibility
+        forecast_df["Date"] = forecast_df["date"]
     return forecast_df

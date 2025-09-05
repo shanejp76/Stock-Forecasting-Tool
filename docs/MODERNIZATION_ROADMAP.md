@@ -125,18 +125,23 @@ This document outlines the transformation of the existing Streamlit-based stock 
 - ✅ **VERIFICATION**: Application fully functional with BigQuery as primary data source
 - ✅ **CLEANUP**: Removed temporary debug files and organized workspace
 
-**IMMEDIATE NEXT SESSION TASKS:**
-1. **Data Quality Investigation**:
+**IMMEDIATE NEXT SESSION TASKS (SEPTEMBER 5, 2025):**
+1. **CRITICAL BUG FIXES**:
+   - Fix KeyError: 'date' in chart display code (price_charts.py line 189)
+   - Debug DataFrame display issue below ticker selector not populating correctly
+   - Root cause: Column naming inconsistency between snake_case (internal) and Title Case (display)
+
+2. **Data Quality Investigation**:
    - Compare raw BigQuery vs Alpha Vantage data for SPY (same symbol, should be identical)
    - Check date alignment, missing rows, and data formatting differences
    - Verify BigQuery column mapping and data types match expected format
    
-2. **Debug AAPL Model Failure**:
+3. **Debug AAPL Model Failure**:
    - Investigate why Prophet model fails with BigQuery AAPL data specifically
    - Check data completeness, null values, and date continuity
    - Compare successful Alpha Vantage AAPL data structure vs BigQuery version
 
-3. **Root Cause Analysis**:
+4. **Root Cause Analysis**:
    - Examine orchestration pipeline data transformation logic
    - Verify BigQuery ingestion process preserves data integrity
    - Check for timezone, date format, or data type conversion issues
