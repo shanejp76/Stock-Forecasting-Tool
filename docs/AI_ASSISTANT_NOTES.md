@@ -99,6 +99,9 @@ When user says "read the notes file" or references this document:
 ### Chat Session Closing
 When user indicates they are closing the chat:
 1. **Clean Up Temporary Files**: Delete or move test files, demo scripts, and temporary development files to maintain workspace organization
+   - **Debug Scripts**: Review and clean up the `debug_scripts/` folder - delete temporary debugging files, move useful diagnostic scripts to archive, keep only essential development tools
+   - **Test Files**: Remove any temporary test files created during development
+   - **Demo Scripts**: Clean up any demonstration or proof-of-concept scripts
 2. **Check Script Length**: If any scripts we worked on exceed 300 lines, ask user if they want to refactor them for better maintainability
 3. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session (PROVIDE THE ACTUAL COMMIT MESSAGE TEXT IN A CODE BLOCK IN CHAT FOR EASY COPYING - DO NOT CREATE FILES FOR COMMIT MESSAGES)
 4. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes (ALREADY COMPLETED IF DONE DURING SESSION)

@@ -77,8 +77,8 @@ def create_multi_panel_chart(
         st.error("Cannot plot forecast: data_to_plot is empty.")
         return
 
-    # Convert snake_case columns to Proper Case for chart display
-    display_data = prepare_data_for_display(data_to_plot)
+    # Use original data directly (snake_case columns)
+    display_data = data_to_plot
 
     # Create subplots: 3 rows, 1 column
     fig = create_chart_subplots(ticker_name_for_plot, selected_stock_for_plot)
@@ -157,10 +157,10 @@ def configure_subplot_layout(fig: go.Figure, data: pd.DataFrame) -> None:
     fig.update_yaxes(title_text="MACD", row=3, col=1)
 
     # Set initial display range (approximately 1.5 years)
-    end_date = data["Date"].max()
+    end_date = data["date"].max()
     display_period_days = min(len(data), 365 * 1.5)
     start_date = end_date - pd.Timedelta(days=display_period_days)
-    start_date = max(start_date, data["Date"].min())
+    start_date = max(start_date, data["date"].min())
 
     # Apply the range to all x-axes
     for row in [1, 2, 3]:

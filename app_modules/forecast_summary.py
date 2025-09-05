@@ -21,9 +21,7 @@ import streamlit as st
 import pandas as pd
 
 
-def display_forecast_summary(
-    forecast_df, data, selected_stock, scores_df=None, price_col="Close"
-):
+def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
     """
     Displays an adaptive forecast summary for the selected stock.
     Shows forecast for 10 days if available, otherwise shows the maximum available forecast period.
@@ -78,7 +76,7 @@ def display_forecast_summary(
             confidence_lower_val = forecast_row["yhat_lower"]
             confidence_upper_val = forecast_row["yhat_upper"]
 
-            last_actual_price = data[price_col].iloc[-1]
+            last_actual_price = data["close"].iloc[-1]
             trend_percentage_val = (
                 (forecast_price_val - last_actual_price) / last_actual_price
             ) * 100

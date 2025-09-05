@@ -89,24 +89,13 @@ display_welcome_expander()
 ) = display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av)
 
 # --- Process Technical Indicators ---
-# Define price_col based on available columns - PRIORITIZE UNADJUSTED CLOSE for swing trading
-if "Close" in data.columns:
-    price_col = "Close"
-elif "close" in data.columns:
-    price_col = "close"
-elif "adjusted_close" in data.columns:
-    price_col = "adjusted_close"
-else:
-    price_col = "close"  # Default fallback to snake_case
-
-st.info(f"Using price column: **{price_col}** for modeling and analysis")
-data = process_technical_indicators(data, price_col)
+data = process_technical_indicators(data)
 
 
 ## Forecasting
 
 # --- Prepare Training Data ---
-df_train = prepare_training_data(data, price_col, percentiles, train_period)
+df_train = prepare_training_data(data, percentiles, train_period)
 
 # --- Setup Cross-Validation Function ---
 run_cross_validation = setup_cross_validation_function(
@@ -121,7 +110,7 @@ optimization_mode, all_params, user_modified_params = determine_optimization_str
 # --- Execute Model Training Pipeline ---
 m, scores_df, forecast, best_params_dict, forecast_summary, chosen_approach = (
     execute_training_pipeline(
-        df_train, price_col, all_params, forecast_period, run_cross_validation
+        df_train, all_params, forecast_period, run_cross_validation
     )
 )
 
@@ -145,7 +134,7 @@ if not data.empty:
 plot_forecast(forecast_df, ticker_name, selected_stock)
 
 # --- UI: Display Forecast Summary Statements ---
-display_forecast_summary(forecast_df, data, selected_stock, scores_df, price_col)
+display_forecast_summary(forecast_df, data, selected_stock, scores_df)
 
 # --- UI: Accuracy Metrics ---
 display_accuracy_metrics(scores_df)
@@ -155,9 +144,7 @@ st.markdown("---")
 
 # --- UI: Business Intelligence KPIs ---
 # UPDATED CALL: Pass market_correlation to display_business_kpis
-display_business_kpis(
-    forecast_df, data, stats, volatility, market_correlation, price_col
-)
+display_business_kpis(forecast_df, data, stats, volatility, market_correlation)
 
 # --- UI: Model Iterations and Performance ---
 display_model_performance(

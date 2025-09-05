@@ -9,7 +9,7 @@ performance. The module also prepares concise forecast summaries for business re
 Functions:
     dynamic_winsorize(df, column, window_size=30, percentiles=(0.05, 0.95)):
         Applies dynamic winsorization to a specified column in a DataFrame.
-    model_drafts(df_train_input, scores_df_input, price_col, _cv_func):
+    model_drafts(df_train_input, scores_df_input, _cv_func):
         Trains baseline and winsorized Prophet models and calculates their performance metrics.
     prepare_forecast_summary(forecast_df, df_train_input, n_days_out):
         Calculates key forecast summary values for a specific number of days out.
@@ -46,12 +46,12 @@ def dynamic_winsorize(df, column, window_size=30, percentiles=(0.05, 0.95)):
 
 @st.cache_resource
 # Renamed cv_func to _cv_func to prevent hashing
-def model_drafts(df_train_input, scores_df_input, price_col, _cv_func):
+def model_drafts(df_train_input, scores_df_input, _cv_func):
     """
     Trains baseline and winsorized Prophet models and calculates their performance metrics.
     """
     current_scores_df = scores_df_input.copy()
-    for col_name in [price_col, "winsorized"]:
+    for col_name in ["close", "winsorized"]:
         if col_name not in df_train_input.columns:
             st.warning(
                 f"Column '{col_name}' not found in training data. Skipping model draft for this column."

@@ -21,9 +21,7 @@ import pandas as pd
 import numpy as np
 
 
-def display_business_kpis(
-    forecast_df, data, stats, volatility, market_correlation, price_col="Close"
-):
+def display_business_kpis(forecast_df, data, stats, volatility, market_correlation):
     """
     Displays business intelligence KPIs.
 
@@ -37,7 +35,7 @@ def display_business_kpis(
     st.subheader("-- Business Intelligence KPIs --")
     with st.expander("Click here to expand"):
         if not forecast_df.empty and not data.empty:
-            last_actual_price = data[price_col].iloc[-1]
+            last_actual_price = data["close"].iloc[-1]
             # Handle Date as either column or index
             if "Date" in data.columns:
                 last_actual_date = data["Date"].max()

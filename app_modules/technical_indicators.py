@@ -2,14 +2,14 @@
 Technical Indicators Module
 
 This module provides functions for calculating technical indicators
-including moving averages, Bollinger Bands, RSI, and MACD.
+including Bollinger Bands, RSI, and MACD.
 
 Functions:
-    process_technical_indicators(data, price_col): Add all technical indicators to data
-    calculate_moving_averages(data, price_col): Calculate SMA indicators
-    calculate_bollinger_bands(data, price_col): Calculate Bollinger Bands
-    calculate_rsi(data, price_col): Calculate RSI indicator
-    calculate_macd(data, price_col): Calculate MACD indicator
+    process_technical_indicators(data): Add all technical indicators to data
+    calculate_moving_averages(data): Calculate SMA indicators
+    calculate_bollinger_bands(data): Calculate Bollinger Bands
+    calculate_rsi(data): Calculate RSI indicator
+    calculate_macd(data): Calculate MACD indicator
     determine_periods(data, volatility, user_training_days): Determine optimal periods
 
 Author: Shane
@@ -22,93 +22,86 @@ import ta
 from typing import Optional, Tuple
 
 
-def process_technical_indicators(
-    data: pd.DataFrame, price_col: str = "close"
-) -> pd.DataFrame:
+def process_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
     """
     Add comprehensive technical indicators to stock data.
 
     Args:
         data: Stock data DataFrame with OHLCV columns
-        price_col: Column name to use for price-based calculations
 
     Returns:
         DataFrame with technical indicators added
     """
-    if data.empty or price_col not in data.columns:
+    if data.empty or "close" not in data.columns:
         return data
 
     # Make a copy to avoid modifying original data
     data_with_indicators = data.copy()
 
     # Calculate moving averages
-    data_with_indicators = calculate_moving_averages(data_with_indicators, price_col)
+    data_with_indicators = calculate_moving_averages(data_with_indicators)
 
     # Calculate Bollinger Bands
-    data_with_indicators = calculate_bollinger_bands(data_with_indicators, price_col)
+    data_with_indicators = calculate_bollinger_bands(data_with_indicators)
 
     # Calculate RSI
-    data_with_indicators = calculate_rsi(data_with_indicators, price_col)
+    data_with_indicators = calculate_rsi(data_with_indicators)
 
     # Calculate MACD
-    data_with_indicators = calculate_macd(data_with_indicators, price_col)
+    data_with_indicators = calculate_macd(data_with_indicators)
 
     # Calculate additional indicators
-    data_with_indicators = calculate_additional_indicators(
-        data_with_indicators, price_col
-    )
+    data_with_indicators = calculate_additional_indicators(data_with_indicators)
 
     return data_with_indicators
 
 
-def calculate_moving_averages(data: pd.DataFrame, price_col: str) -> pd.DataFrame:
+def calculate_moving_averages(data: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate Simple Moving Averages (SMA).
 
     Args:
         data: Stock data DataFrame
-        price_col: Column name for price data
 
     Returns:
         DataFrame with SMA columns added
     """
-    if price_col not in data.columns:
+    if "close" not in data.columns:
         return data
 
     # Calculate SMAs for different periods
-    data["SMA_20"] = ta.trend.sma_indicator(data[price_col], window=20)
-    data["SMA_50"] = ta.trend.sma_indicator(data[price_col], window=50)
-    data["SMA_200"] = ta.trend.sma_indicator(data[price_col], window=200)
+    data["SMA_20"] = ta.trend.sma_indicator(data["close"], window=20)
+    data["SMA_50"] = ta.trend.sma_indicator(data["close"], window=50)
+    data["SMA_200"] = ta.trend.sma_indicator(data["close"], window=200)
 
     return data
 
 
 def calculate_bollinger_bands(
-    data: pd.DataFrame, price_col: str, window: int = 20, std_dev: int = 2
+    data: pd.DataFrame, window: int = 20, std_dev: int = 2
 ) -> pd.DataFrame:
     """
     Calculate Bollinger Bands.
 
     Args:
         data: Stock data DataFrame
-        price_col: Column name for price data
         window: Period for moving average calculation
         std_dev: Number of standard deviations for bands
 
     Returns:
         DataFrame with Bollinger Band columns added
     """
-    if price_col not in data.columns:
+    if "close" not in data.columns:
         return data
 
     # Calculate Bollinger Bands using ta library
     bb_high = ta.volatility.bollinger_hband(
-        data[price_col], window=window, window_dev=std_dev
+        data["close"], window=window, window_dev=std_dev
     )
     bb_low = ta.volatility.bollinger_lband(
-        data[price_col], window=window, window_dev=std_dev
+        data["close"], window=window, window_dev=std_dev
     )
-    bb_mid = ta.volatility.bollinger_mavg(data[price_col], window=window)
+    bb_mid = ta.volatility.bollinger_mavg(data["close"], window=window)
 
     data["Bollinger_Upper"] = bb_high
     data["Bollinger_Lower"] = bb_low
@@ -116,28 +109,49 @@ def calculate_bollinger_bands(
 
     # Calculate Bollinger Band width and position
     data["BB_Width"] = (bb_high - bb_low) / bb_mid
-    data["BB_Position"] = (data[price_col] - bb_low) / (bb_high - bb_low)
+    data["BB_Position"] = (data["close"] - bb_low) / (bb_high - bb_low)
 
     return data
 
 
-def calculate_rsi(data: pd.DataFrame, price_col: str, window: int = 14) -> pd.DataFrame:
+def calculate_rsi(data: pd.DataFrame, window: int = 14) -> pd.DataFrame:
     """
     Calculate Relative Strength Index (RSI).
 
     Args:
         data: Stock data DataFrame
-        price_col: Column name for price data
         window: Period for RSI calculation
 
     Returns:
         DataFrame with RSI column added
     """
-    if price_col not in data.columns:
+    if "close" not in data.columns:
         return data
 
     # Calculate RSI using ta library
-    data["RSI"] = ta.momentum.rsi(data[price_col], window=window)
+    data["RSI"] = ta.momentum.rsi(data["close"], window=window)
+
+    # Add RSI signal classifications
+    data["RSI_Signal"] = "Neutral"
+    data.loc[data["RSI"] > 70, "RSI_Signal"] = "Overbought"
+    data.loc[data["RSI"] < 30, "RSI_Signal"] = "Oversold"
+
+    return data
+    """
+    Calculate Relative Strength Index (RSI).
+
+    Args:
+        data: Stock data DataFrame
+        window: Period for RSI calculation
+
+    Returns:
+        DataFrame with RSI column added
+    """
+    if "close" not in data.columns:
+        return data
+
+    # Calculate RSI using ta library
+    data["RSI"] = ta.momentum.rsi(data["close"], window=window)
 
     # Add RSI signal classifications
     data["RSI_Signal"] = "Neutral"
@@ -148,14 +162,13 @@ def calculate_rsi(data: pd.DataFrame, price_col: str, window: int = 14) -> pd.Da
 
 
 def calculate_macd(
-    data: pd.DataFrame, price_col: str, fast: int = 12, slow: int = 26, signal: int = 9
+    data: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9
 ) -> pd.DataFrame:
     """
     Calculate MACD (Moving Average Convergence Divergence).
 
     Args:
         data: Stock data DataFrame
-        price_col: Column name for price data
         fast: Fast EMA period
         slow: Slow EMA period
         signal: Signal line EMA period
@@ -163,16 +176,16 @@ def calculate_macd(
     Returns:
         DataFrame with MACD columns added
     """
-    if price_col not in data.columns:
+    if "close" not in data.columns:
         return data
 
     # Calculate MACD components using ta library
-    data["MACD"] = ta.trend.macd(data[price_col], window_fast=fast, window_slow=slow)
+    data["MACD"] = ta.trend.macd(data["close"], window_fast=fast, window_slow=slow)
     data["MACD_Signal"] = ta.trend.macd_signal(
-        data[price_col], window_fast=fast, window_slow=slow, window_sign=signal
+        data["close"], window_fast=fast, window_slow=slow, window_sign=signal
     )
     data["MACD_Histogram"] = ta.trend.macd_diff(
-        data[price_col], window_fast=fast, window_slow=slow, window_sign=signal
+        data["close"], window_fast=fast, window_slow=slow, window_sign=signal
     )
 
     # Add MACD signal classifications
@@ -183,43 +196,41 @@ def calculate_macd(
     return data
 
 
-def calculate_additional_indicators(data: pd.DataFrame, price_col: str) -> pd.DataFrame:
+def calculate_additional_indicators(data: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate additional technical indicators.
 
     Args:
         data: Stock data DataFrame
-        price_col: Column name for price data
 
     Returns:
         DataFrame with additional indicators added
     """
     if (
-        price_col not in data.columns
+        "close" not in data.columns
         or "high" not in data.columns
         or "low" not in data.columns
     ):
         return data
 
     # Stochastic Oscillator
-    data["Stoch_K"] = ta.momentum.stoch(data["high"], data["low"], data[price_col])
-    data["Stoch_D"] = ta.momentum.stoch_signal(
-        data["high"], data["low"], data[price_col]
-    )
+    data["Stoch_K"] = ta.momentum.stoch(data["high"], data["low"], data["close"])
+    data["Stoch_D"] = ta.momentum.stoch_signal(data["high"], data["low"], data["close"])
 
     # Average True Range (ATR)
-    if "close" in data.columns:
-        data["ATR"] = ta.volatility.average_true_range(
-            data["high"], data["low"], data["close"]
-        )
+    data["ATR"] = ta.volatility.average_true_range(
+        data["high"], data["low"], data["close"]
+    )
 
     # Commodity Channel Index (CCI)
-    data["CCI"] = ta.trend.cci(data["high"], data["low"], data[price_col])
+    data["CCI"] = ta.trend.cci(data["high"], data["low"], data["close"])
 
     # Williams %R
     data["Williams_R"] = ta.momentum.williams_r(
-        data["high"], data["low"], data[price_col]
+        data["high"], data["low"], data["close"]
     )
+
+    return data
 
     return data
 
@@ -332,14 +343,11 @@ def get_technical_summary(data: pd.DataFrame) -> dict:
                 summary["MACD"] = {"signal": "Bearish", "action": "Sell"}
 
     # Moving Average signals
-    # Determine price column
-    price_col = "close" if "close" in data.columns else "close"
-
     if (
         all(col in data.columns for col in ["SMA_20", "SMA_50"])
-        and price_col in data.columns
+        and "close" in data.columns
     ):
-        price = latest[price_col]
+        price = latest["close"]
         sma_20 = latest["SMA_20"]
         sma_50 = latest["SMA_50"]
 

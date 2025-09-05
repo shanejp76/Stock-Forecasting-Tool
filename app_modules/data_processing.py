@@ -6,7 +6,6 @@ including filtering by date ranges and basic data transformations.
 
 Functions:
     process_stock_data(data, start_date): Filter and process raw stock data
-    validate_data_integrity(data): Validate data quality and completeness
     clean_stock_data(data): Clean and standardize stock data format
 
 Author: Shane
@@ -59,63 +58,6 @@ def process_stock_data(data: pd.DataFrame, start_date: date) -> pd.DataFrame:
         data = data.dropna(subset=columns_to_check)
 
     return data
-
-
-def validate_data_integrity(data: pd.DataFrame) -> dict:
-    """
-    Validate data quality and completeness.
-
-    Args:
-        data: Stock data DataFrame
-
-    Returns:
-        Dictionary with validation results
-    """
-    if data.empty:
-        return {
-            "is_valid": False,
-            "issues": ["Data is empty"],
-            "row_count": 0,
-            "date_range": None,
-        }
-
-    issues = []
-
-    # Check for required columns
-    required_columns = ["Open", "High", "Low", "Close", "Volume"]
-    missing_columns = [col for col in required_columns if col not in data.columns]
-    if missing_columns:
-        issues.append(f"Missing required columns: {missing_columns}")
-
-    # Check for negative prices
-    price_columns = ["Open", "High", "Low", "Close"]
-    for col in price_columns:
-        if col in data.columns and (data[col] <= 0).any():
-            issues.append(f"Found non-positive values in {col}")
-
-    # Check for logical price relationships
-    if all(col in data.columns for col in ["High", "Low", "Open", "Close"]):
-        if (data["High"] < data["Low"]).any():
-            issues.append("High prices less than Low prices found")
-        if ((data["Open"] > data["High"]) | (data["Open"] < data["Low"])).any():
-            issues.append("Open prices outside High-Low range found")
-        if ((data["Close"] > data["High"]) | (data["Close"] < data["Low"])).any():
-            issues.append("Close prices outside High-Low range found")
-
-    # Check for excessive gaps
-    if len(data) > 1:
-        date_diffs = data.index.to_series().diff().dt.days
-        max_gap = date_diffs.max()
-        if max_gap > 10:  # More than 10 days gap
-            issues.append(f"Found data gap of {max_gap} days")
-
-    return {
-        "is_valid": len(issues) == 0,
-        "issues": issues,
-        "row_count": len(data),
-        "date_range": (data.index.min(), data.index.max()) if not data.empty else None,
-        "missing_values": data.isnull().sum().to_dict(),
-    }
 
 
 def clean_stock_data(data: pd.DataFrame) -> pd.DataFrame:

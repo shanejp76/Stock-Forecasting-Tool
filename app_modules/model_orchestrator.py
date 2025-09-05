@@ -57,14 +57,13 @@ def determine_optimization_strategy(
 
 
 def execute_training_pipeline(
-    df_train, price_col, all_params, forecast_period, run_cross_validation
+    df_train, all_params, forecast_period, run_cross_validation
 ):
     """
     Execute the complete training pipeline with status updates.
 
     Args:
         df_train: Training DataFrame
-        price_col: Price column name
         all_params: List of parameter combinations
         forecast_period: Forecast period in days
         run_cross_validation: Cross-validation function
@@ -91,24 +90,22 @@ def execute_training_pipeline(
     )
 
     if not df_train.empty and len(df_train) > 0:
-        scores_df = model_drafts(
-            df_train, scores_df, price_col, _cv_func=run_cross_validation
-        )
+        scores_df = model_drafts(df_train, scores_df, _cv_func=run_cross_validation)
 
         # Step 2: Compare models and select best data preparation approach
         status_placeholder.info("Step 2/3: Comparing baseline vs winsorized models...")
         if len(scores_df) >= 2:
             if scores_df.iloc[0]["rmse"] < scores_df.iloc[1]["rmse"]:
-                df_train = df_train.rename(columns={price_col: "y"})
+                df_train = df_train.rename(columns={"close": "y"})
                 chosen_approach = "raw data"
             else:
                 df_train = df_train.rename(columns={"winsorized": "y"})
                 chosen_approach = "winsorized data"
         else:
             st.warning(
-                f"Not enough model drafts for comparison. Using raw '{price_col}' as target for final model."
+                f"Not enough model drafts for comparison. Using raw 'close' as target for final model."
             )
-            df_train = df_train.rename(columns={price_col: "y"})
+            df_train = df_train.rename(columns={"close": "y"})
             chosen_approach = "raw data (fallback)"
 
         # Step 3: Train final model with hyperparameter tuning

@@ -8,6 +8,42 @@ fix: resolve BigQuery project configuration mismatch and complete Phase 1 data i
 - Verified BigQuery connection with 324 symbols, 149,040 rows, 2+ years data
 - Updated roadmap to reflect completed Phase 1 BigQuery integration
 
+refactor: eliminate price_col parameter system and complete architectural simplification
+
+- **COMPLETED (SEPTEMBER 5, 2025)**: Eliminated price_col parameter system across entire codebase
+- **ARCHITECTURAL SIMPLIFICATION**: All modules now use 'close' column consistently for calculations
+- **CODE QUALITY**: Removed unused validate_data_integrity function and cleaned up imports
+- **MODULES REFACTORED**: main.py, technical_indicators.py, business_kpis.py, data_pipeline.py, forecast_summary.py, market_correlation.py, model_trainer.py, model_orchestrator.py
+- **VALIDATION**: Application successfully tested - all features working with simplified architecture
+- **TECHNICAL INDICATORS**: All calculations (SMA, RSI, MACD, Bollinger Bands, ATR, etc.) standardized on 'close' column
+- **MODEL TRAINING**: Both baseline and winsorized models working with consistent column usage
+- **WORKSPACE CLEANUP**: Temporary debug scripts removed, reference materials archived
+- **SESSION PROTOCOL**: Updated AI Assistant Notes with clear debug script cleanup instructions
+
+**CRITICAL BIGQUERY DATA CLEANING REQUIRED ✅ (TOP PRIORITY - SEPTEMBER 5, 2025)**
+
+**URGENT: BigQuery data warehouse contains systematically corrupted data that requires immediate cleaning**
+
+**IDENTIFIED DATA CORRUPTION:**
+- Column naming inconsistencies throughout BigQuery tables
+- Mixed case conventions causing application failures
+- Data validation logic expects Title Case but BigQuery returns snake_case
+- Potential data type mismatches and formatting issues
+
+**IMMEDIATE ACTION REQUIRED:**
+1. **DATA AUDIT**: Comprehensive review of all BigQuery table schemas and data formats
+2. **COLUMN STANDARDIZATION**: Ensure all BigQuery data uses consistent snake_case column naming
+3. **DATA VALIDATION**: Run data integrity checks across all symbols in warehouse
+4. **SCHEMA MIGRATION**: Update BigQuery tables to match expected internal data format
+5. **TESTING**: Verify application functionality after data cleanup
+
+**IMPACT:**
+- Application currently functioning but data inconsistencies may cause future failures
+- Mixed column naming conventions create maintenance burden and potential bugs
+- Data validation functions may fail if applied to raw BigQuery data
+
+**PRIORITY**: TOP PRIORITY - Must be completed before any new development work
+
 **ENVIRONMENT SETUP COMPLETED ✅ (SEPTEMBER 3, 2025)**
 - **CRITICAL FIX**: Resolved environment configuration issues and Python path problems
 - **ACTIVATION SCRIPTS**: Created `activate_env.ps1` and `activate_env.bat` for consistent environment setup

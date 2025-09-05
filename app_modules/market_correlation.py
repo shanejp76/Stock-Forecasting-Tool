@@ -42,12 +42,9 @@ def calculate_market_correlation(
     Returns:
         The correlation coefficient as a float, or None if data is insufficient.
     """
-    # Determine the price column to use
-    price_col = "Close" if "Close" in stock_data.columns else "close"
-
-    if stock_data.empty or price_col not in stock_data.columns:
+    if stock_data.empty or "close" not in stock_data.columns:
         st.warning(
-            f"Stock data is empty or '{price_col}' column missing for correlation calculation."
+            f"Stock data is empty or 'close' column missing for correlation calculation."
         )
         return None
 
@@ -60,7 +57,7 @@ def calculate_market_correlation(
     )
 
     # Determine the price column for market data
-    market_price_col = "Close" if "Close" in market_data.columns else "close"
+    market_price_col = "close"
 
     if market_data.empty or market_price_col not in market_data.columns:
         st.warning(
@@ -90,7 +87,7 @@ def calculate_market_correlation(
     market_data["date"] = pd.to_datetime(market_data["date"])
 
     merged_data = pd.merge(
-        stock_data[["date", price_col]],
+        stock_data[["date", "close"]],
         market_data[["date", market_price_col]],
         on="date",
         how="inner",
@@ -104,7 +101,7 @@ def calculate_market_correlation(
         return None
 
     # Calculate daily returns
-    merged_data["stock_returns"] = merged_data[f"{price_col}_stock"].pct_change()
+    merged_data["stock_returns"] = merged_data["close_stock"].pct_change()
     merged_data["market_returns"] = merged_data[
         f"{market_price_col}_market"
     ].pct_change()

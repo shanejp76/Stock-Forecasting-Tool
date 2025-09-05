@@ -47,9 +47,6 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
             data = data.drop_duplicates(subset=["date"], keep="last")
             duplicate_count = original_count - len(data)
 
-            if duplicate_count > 0:
-                st.info(f"ℹ️ Removed {duplicate_count} duplicate records for {ticker}")
-
             # Sort by date ascending for Prophet compatibility
             data = data.sort_values("date")
 

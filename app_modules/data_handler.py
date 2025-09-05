@@ -30,7 +30,6 @@ from .data_sources import (
 )
 from .data_processing import (
     process_stock_data,
-    validate_data_integrity,
     clean_stock_data,
 )
 from .stock_statistics import (
@@ -56,7 +55,6 @@ __all__ = [
     "load_bigquery_symbols",
     "load_alpha_vantage_data",
     "process_stock_data",
-    "validate_data_integrity",
     "clean_stock_data",
     "calculate_stock_stats",
     "calculate_volatility_metrics",

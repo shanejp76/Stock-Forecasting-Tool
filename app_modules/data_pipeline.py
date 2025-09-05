@@ -14,13 +14,12 @@ from prophet.diagnostics import cross_validation
 from .model_trainer import dynamic_winsorize
 
 
-def prepare_training_data(data, price_col, percentiles, train_period):
+def prepare_training_data(data, percentiles, train_period):
     """
     Prepare and process training data with winsorization.
 
     Args:
         data: DataFrame with stock data
-        price_col: Column name for price data
         percentiles: Tuple of percentiles for winsorization
         train_period: Number of days for training
 
@@ -28,14 +27,14 @@ def prepare_training_data(data, price_col, percentiles, train_period):
         DataFrame: Prepared training data
     """
     # Apply dynamic winsorization to raw data
-    processed_data = dynamic_winsorize(data.copy(), price_col, percentiles=percentiles)
+    processed_data = dynamic_winsorize(data.copy(), "close", percentiles=percentiles)
 
     # Reset index to get date as a column (BigQuery data has date as index)
     processed_data = processed_data.reset_index()
 
     # Get training data - handle both "Date" and "date" column names
     date_col = "Date" if "Date" in processed_data.columns else "date"
-    df_train = processed_data[[date_col, price_col, "winsorized"]].copy()
+    df_train = processed_data[[date_col, "close", "winsorized"]].copy()
     df_train = df_train.rename(columns={date_col: "ds"})
 
     if train_period <= len(df_train):
@@ -173,7 +172,7 @@ def merge_forecast_with_data(forecast, data, train_period):
             available_cols.append(col)
 
     forecast_df = forecast_df[available_cols]
-    
+
     # Convert ds to lowercase date column for consistent chart usage (only if ds exists)
     if "ds" in forecast_df.columns:
         forecast_df.rename(columns={"ds": "date"}, inplace=True)
