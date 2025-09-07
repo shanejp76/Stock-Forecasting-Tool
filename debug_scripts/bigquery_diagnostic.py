@@ -109,7 +109,7 @@ class BigQueryDiagnostic:
             self.bq_client = BigQueryClient()
             self.raw_client = bigquery.Client()
             self.dataset_id = "stock_data"
-            self.table_id = "daily_prices"
+            self.table_id = "raw_stock_data"
 
             self.logger.info(
                 f"Connected to BigQuery project: {self.raw_client.project}"

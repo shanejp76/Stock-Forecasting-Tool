@@ -2,11 +2,12 @@
 Technical Indicators Module
 
 This module provides functions for calculating technical indicators
-including Bollinger Bands, RSI, and MACD.
+including Bollinger Bands, RSI, MACD, and cross signals.
 
 Functions:
     process_technical_indicators(data): Add all technical indicators to data
-    calculate_moving_averages(data): Calculate SMA indicators
+    calculate_moving_averages(data): Calculate SMA indicators and cross signals
+    calculate_cross_signals(data): Calculate Death Cross and Golden Cross signals
     calculate_bollinger_bands(data): Calculate Bollinger Bands
     calculate_rsi(data): Calculate RSI indicator
     calculate_macd(data): Calculate MACD indicator
@@ -14,6 +15,7 @@ Functions:
 
 Author: Shane
 Created: 2025-09-02 (Refactored from data_handler.py)
+Updated: 2025-09-07 (Added Death Cross and Golden Cross signals)
 """
 
 import pandas as pd
@@ -58,13 +60,13 @@ def process_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
 
 def calculate_moving_averages(data: pd.DataFrame) -> pd.DataFrame:
     """
-    Calculate Simple Moving Averages (SMA).
+    Calculate Simple Moving Averages (SMA) and cross signals.
 
     Args:
         data: Stock data DataFrame
 
     Returns:
-        DataFrame with SMA columns added
+        DataFrame with SMA columns and cross signals added
     """
     if "close" not in data.columns:
         return data
@@ -74,6 +76,58 @@ def calculate_moving_averages(data: pd.DataFrame) -> pd.DataFrame:
     data["SMA_50"] = ta.trend.sma_indicator(data["close"], window=50)
     data["SMA_100"] = ta.trend.sma_indicator(data["close"], window=100)
     data["SMA_200"] = ta.trend.sma_indicator(data["close"], window=200)
+
+    # Calculate Death Cross and Golden Cross signals
+    data = calculate_cross_signals(data)
+
+    return data
+
+
+def calculate_cross_signals(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate Death Cross and Golden Cross signals.
+
+    Death Cross: SMA50 crosses below SMA200 (bearish signal)
+    Golden Cross: SMA50 crosses above SMA200 (bullish signal)
+
+    Args:
+        data: DataFrame with SMA_50 and SMA_200 columns
+
+    Returns:
+        DataFrame with DeathCross_Signal and GoldenCross_Signal columns added
+    """
+    if not all(col in data.columns for col in ["SMA_50", "SMA_200"]):
+        # Initialize empty signal columns if SMAs don't exist
+        data["DeathCross_Signal"] = np.nan
+        data["GoldenCross_Signal"] = np.nan
+        return data
+
+    # Initialize signal columns with NaN
+    data["DeathCross_Signal"] = np.nan
+    data["GoldenCross_Signal"] = np.nan
+
+    # Calculate crossover signals
+    # Previous period comparison (SMA50 was above/below SMA200)
+    sma50_above_sma200_prev = data["SMA_50"].shift(1) > data["SMA_200"].shift(1)
+    sma50_below_sma200_prev = data["SMA_50"].shift(1) < data["SMA_200"].shift(1)
+
+    # Current period comparison
+    sma50_above_sma200_curr = data["SMA_50"] > data["SMA_200"]
+    sma50_below_sma200_curr = data["SMA_50"] < data["SMA_200"]
+
+    # Death Cross: SMA50 was above SMA200, now below
+    death_cross_mask = sma50_above_sma200_prev & sma50_below_sma200_curr
+
+    # Golden Cross: SMA50 was below SMA200, now above
+    golden_cross_mask = sma50_below_sma200_prev & sma50_above_sma200_curr
+
+    # Set signal values to close price where crossover occurs
+    data.loc[death_cross_mask, "DeathCross_Signal"] = data.loc[
+        death_cross_mask, "close"
+    ]
+    data.loc[golden_cross_mask, "GoldenCross_Signal"] = data.loc[
+        golden_cross_mask, "close"
+    ]
 
     return data
 

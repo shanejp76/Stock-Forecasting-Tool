@@ -105,9 +105,16 @@ When user indicates they are closing the chat:
 2. **Check Script Length**: If any scripts we worked on exceed 300 lines, ask user if they want to refactor them for better maintainability
 3. **Create Commit Message**: Generate a descriptive commit message for all changes made during the session (PROVIDE THE ACTUAL COMMIT MESSAGE TEXT IN A CODE BLOCK IN CHAT FOR EASY COPYING - DO NOT CREATE FILES FOR COMMIT MESSAGES)
 4. **Update Roadmap**: Modify docs/MODERNIZATION_ROADMAP.md to reflect progress and status changes (ALREADY COMPLETED IF DONE DURING SESSION)
-5. **Update Requirements**: Update requirements.txt with any new Python packages installed (CHECK IF ANY NEW PACKAGES WERE ADDED)
-6. **Environment Variables**: Update .env.example if new environment variables were added (CHECK IF ANY NEW ENV VARS WERE ADDED)
-7. **Summary**: Provide brief summary of accomplishments and next recommended steps
+5. **Clean Up Roadmap Format**: Ensure roadmap follows proper structure and formatting:
+   - Two sections only: "Phases" (active work) and "Completed" (finished work)
+   - No mixing of completed vs todo items within sections
+   - Completed section at the bottom
+   - Consistent formatting: Priority, Objective, Implementation Steps for phases
+   - Use "COMPLETED:" text markers instead of emojis per style preferences
+   - Remove redundant or outdated content for clarity
+6. **Update Requirements**: Update requirements.txt with any new Python packages installed (CHECK IF ANY NEW PACKAGES WERE ADDED)
+7. **Environment Variables**: Update .env.example if new environment variables were added (CHECK IF ANY NEW ENV VARS WERE ADDED)
+8. **Summary**: Provide brief summary of accomplishments and next recommended steps
 
 IMPORTANT: Session details and continuation context should ONLY go in MODERNIZATION_ROADMAP.md, NOT in this AI_ASSISTANT_NOTES.md file.
 
