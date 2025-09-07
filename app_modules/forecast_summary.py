@@ -39,14 +39,10 @@ def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
         preferred_target_day = 10  # Preferred forecast day
 
         # Find the actual forecast data (after historical data ends)
-        # Handle date being in index or column
-        if "Date" in data.columns:
-            last_actual_date = data["Date"].max()
-        else:
-            # Date is in the index
-            last_actual_date = data.index.max()
+        # Date is now always in the date column since we moved it from the index
+        last_actual_date = data["date"].max()
 
-        forecast_only_df = forecast_df[forecast_df["Date"] > last_actual_date]
+        forecast_only_df = forecast_df[forecast_df["date"] > last_actual_date]
 
         if len(forecast_only_df) > 0:
             # Determine the actual target day based on available forecast data
@@ -71,7 +67,7 @@ def display_forecast_summary(forecast_df, data, selected_stock, scores_df=None):
                 target_day - 1
             ]  # -1 because index starts at 0
 
-            forecast_date_str = forecast_row["Date"].strftime("%Y-%m-%d")
+            forecast_date_str = forecast_row["date"].strftime("%Y-%m-%d")
             forecast_price_val = forecast_row["yhat"]
             confidence_lower_val = forecast_row["yhat_lower"]
             confidence_upper_val = forecast_row["yhat_upper"]

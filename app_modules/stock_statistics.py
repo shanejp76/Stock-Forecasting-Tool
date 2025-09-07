@@ -56,7 +56,7 @@ def calculate_stock_stats(
         **volatility_metrics,
         "Symbol": selected_stock,
         "data_points": len(data),
-        "date_range": f"{data.index.min().strftime('%Y-%m-%d')} to {data.index.max().strftime('%Y-%m-%d')}",
+        "date_range": f"{data['date'].min().strftime('%Y-%m-%d')} to {data['date'].max().strftime('%Y-%m-%d')}",
     }
 
     return (

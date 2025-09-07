@@ -152,12 +152,12 @@ def merge_forecast_with_data(forecast, data, train_period):
     optional_cols = [
         "close",  # Primary price column
         "adjusted_close",  # Secondary price column
-        "SMA50",
+        "SMA_50",
         "bb_upper",
         "bb_lower",
-        "SMA20",
-        "SMA100",
-        "SMA200",
+        "SMA_20",
+        "SMA_100",
+        "SMA_200",
         "GoldenCross_Signal",
         "DeathCross_Signal",
         "RSI",
@@ -176,6 +176,4 @@ def merge_forecast_with_data(forecast, data, train_period):
     # Convert ds to lowercase date column for consistent chart usage (only if ds exists)
     if "ds" in forecast_df.columns:
         forecast_df.rename(columns={"ds": "date"}, inplace=True)
-        # Also create uppercase Date for backward compatibility
-        forecast_df["Date"] = forecast_df["date"]
     return forecast_df

@@ -148,10 +148,16 @@ def add_sma_traces(fig: go.Figure, data: pd.DataFrame) -> None:
         data: DataFrame containing SMA data
     """
     sma_configs = [
-        {"col": "SMA200", "name": "SMA200", "color": "teal", "width": 1},
-        {"col": "SMA100", "name": "SMA100", "color": "purple", "width": 1},
-        {"col": "SMA50", "name": "SMA50", "color": "black", "width": 2, "dash": "dash"},
-        {"col": "SMA20", "name": "SMA20", "color": "black", "width": 1, "dash": "dot"},
+        {"col": "SMA_200", "name": "SMA200", "color": "teal", "width": 1},
+        {"col": "SMA_100", "name": "SMA100", "color": "purple", "width": 1},
+        {
+            "col": "SMA_50",
+            "name": "SMA50",
+            "color": "black",
+            "width": 2,
+            "dash": "dash",
+        },
+        {"col": "SMA_20", "name": "SMA20", "color": "black", "width": 1, "dash": "dot"},
     ]
 
     for config in sma_configs:
@@ -187,11 +193,11 @@ def add_forecast_traces(fig: go.Figure, data: pd.DataFrame) -> None:
         if col_name in data.columns:
             date_col = col_name
             break
-    
+
     # If no date column found, skip forecast traces
     if date_col is None:
         return
-    
+
     # Forecast confidence interval
     if "yhat_lower" in data.columns and "yhat_upper" in data.columns:
         # Lower bound

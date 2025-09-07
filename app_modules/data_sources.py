@@ -53,9 +53,8 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
             # Limit to exactly 500 most recent trading days for optimal Prophet performance
             data = data.tail(500)
 
-            # Set date as index again for consistency with other functions
-            data = data.set_index("date")
-
+            # Keep date as column for charting functions that expect data["date"]
+            # Don't set it back as index since charts need it as a column
             return data, "BigQuery"
         else:
             return pd.DataFrame(), "BigQuery (no data)"
@@ -159,6 +158,11 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
             ]
             # Convert index to datetime if it's not already
             data.index = pd.to_datetime(data.index)
+
+            # Reset index to make date available as a column for charting functions
+            data = data.reset_index()
+            data = data.rename(columns={"index": "date"})
+
             return data
         else:
             st.warning(f"No data received from Alpha Vantage for {ticker}")

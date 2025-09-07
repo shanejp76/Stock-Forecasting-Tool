@@ -77,6 +77,10 @@ def create_multi_panel_chart(
         st.error("Cannot plot forecast: data_to_plot is empty.")
         return
 
+    # Ensure date is available as a column for charting
+    if 'date' not in data_to_plot.columns and hasattr(data_to_plot.index, 'name') and data_to_plot.index.name == 'date':
+        data_to_plot = data_to_plot.reset_index()
+
     # Use original data directly (snake_case columns)
     display_data = data_to_plot
 

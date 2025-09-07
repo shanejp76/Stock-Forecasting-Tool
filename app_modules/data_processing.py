@@ -23,7 +23,7 @@ def process_stock_data(data: pd.DataFrame, start_date: date) -> pd.DataFrame:
     Filters and processes raw stock data.
 
     Args:
-        data: Raw stock data DataFrame with date index
+        data: Raw stock data DataFrame with date column
         start_date: Earliest date to include in filtered data
 
     Returns:
@@ -32,15 +32,22 @@ def process_stock_data(data: pd.DataFrame, start_date: date) -> pd.DataFrame:
     if data.empty:
         return data
 
-    # Ensure index is datetime
-    if not isinstance(data.index, pd.DatetimeIndex):
-        data.index = pd.to_datetime(data.index)
+    # Ensure date column exists and is datetime
+    if "date" not in data.columns:
+        # If date is in index, reset it to column
+        if hasattr(data.index, "name") and data.index.name == "date":
+            data = data.reset_index()
+        else:
+            raise ValueError("No 'date' column or index found in data")
+
+    # Ensure date column is datetime
+    data["date"] = pd.to_datetime(data["date"])
 
     # Filter data by start date
-    data = data[data.index >= pd.to_datetime(start_date)]
+    data = data[data["date"] >= pd.to_datetime(start_date)]
 
     # Sort by date ascending
-    data = data.sort_index()
+    data = data.sort_values("date")
 
     # Remove any rows with missing critical data
     # Check for both capitalized and lowercase column names

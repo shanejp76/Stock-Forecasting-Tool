@@ -72,6 +72,7 @@ def calculate_moving_averages(data: pd.DataFrame) -> pd.DataFrame:
     # Calculate SMAs for different periods
     data["SMA_20"] = ta.trend.sma_indicator(data["close"], window=20)
     data["SMA_50"] = ta.trend.sma_indicator(data["close"], window=50)
+    data["SMA_100"] = ta.trend.sma_indicator(data["close"], window=100)
     data["SMA_200"] = ta.trend.sma_indicator(data["close"], window=200)
 
     return data
@@ -103,8 +104,8 @@ def calculate_bollinger_bands(
     )
     bb_mid = ta.volatility.bollinger_mavg(data["close"], window=window)
 
-    data["Bollinger_Upper"] = bb_high
-    data["Bollinger_Lower"] = bb_low
+    data["bb_upper"] = bb_high
+    data["bb_lower"] = bb_low
     data["Bollinger_Middle"] = bb_mid
 
     # Calculate Bollinger Band width and position
@@ -184,7 +185,7 @@ def calculate_macd(
     data["MACD_Signal"] = ta.trend.macd_signal(
         data["close"], window_fast=fast, window_slow=slow, window_sign=signal
     )
-    data["MACD_Histogram"] = ta.trend.macd_diff(
+    data["MACD_Hist"] = ta.trend.macd_diff(
         data["close"], window_fast=fast, window_slow=slow, window_sign=signal
     )
 

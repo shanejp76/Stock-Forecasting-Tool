@@ -36,13 +36,10 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
     with st.expander("Click here to expand"):
         if not forecast_df.empty and not data.empty:
             last_actual_price = data["close"].iloc[-1]
-            # Handle Date as either column or index
-            if "Date" in data.columns:
-                last_actual_date = data["Date"].max()
-            else:
-                last_actual_date = data.index.max()
+            # Date is now always in the date column since we moved it from the index
+            last_actual_date = data["date"].max()
 
-            forecast_df_sorted = forecast_df.sort_values(by="Date").reset_index(
+            forecast_df_sorted = forecast_df.sort_values(by="date").reset_index(
                 drop=True
             )
 
@@ -52,7 +49,7 @@ def display_business_kpis(forecast_df, data, stats, volatility, market_correlati
                 comparison_date = pd.to_datetime(last_actual_date)
 
             forecast_start_idx = forecast_df_sorted[
-                forecast_df_sorted["Date"] > comparison_date
+                forecast_df_sorted["date"] > comparison_date
             ].index.min()
 
             if pd.notna(forecast_start_idx):
