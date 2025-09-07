@@ -18,6 +18,7 @@ import os
 import sys
 import time
 import pickle
+import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Set
 from tqdm import tqdm
@@ -25,9 +26,11 @@ from tqdm import tqdm
 # Add the parent directory to the path so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app_modules.config import Config
-from app_modules.data_handler import load_stock_data
+from app_modules.config import load_environment_variables
+from app_modules.data_sources import load_alpha_vantage_data
 from app_modules.bigquery_client import upload_to_bigquery
+from datetime import datetime
+from alpha_vantage.timeseries import TimeSeries
 
 
 class LoaderConfig:
@@ -130,8 +133,15 @@ class BulkDataLoader:
         self.processed_symbols: Set[str] = set()
         self.failed_symbols: Set[str] = set()
 
-        # Initialize app configuration
-        self.app_config = Config()
+        # Initialize Alpha Vantage key from environment
+        alpha_vantage_key, _ = load_environment_variables()
+        if not alpha_vantage_key:
+            raise ValueError("Alpha Vantage API key not found in .env file")
+
+        self.alpha_vantage_key = alpha_vantage_key
+
+        # Initialize Alpha Vantage TimeSeries client
+        self.ts_av = TimeSeries(key=alpha_vantage_key, output_format="pandas")
 
         # Progress tracking
         self.progress_bar: Optional[tqdm] = None
@@ -255,15 +265,28 @@ class BulkDataLoader:
         """
         for attempt in range(self.config.max_retries):
             try:
-                # Load stock data
-                data = load_stock_data(
-                    symbol,
-                    self.config.start_date.strftime("%Y-%m-%d"),
-                    self.config.end_date.strftime("%Y-%m-%d"),
-                )
+                # Load stock data directly from Alpha Vantage
+                data = load_alpha_vantage_data(self.ts_av, symbol)
 
                 if data.empty:
                     self.stats.add_error(symbol, "No data returned", "no_data")
+                    return False
+
+                # Filter data by date range if needed
+                start_date = self.config.start_date
+                end_date = self.config.end_date
+
+                if "date" in data.columns:
+                    data["date"] = pd.to_datetime(data["date"])
+                    data = data[
+                        (data["date"] >= pd.Timestamp(start_date))
+                        & (data["date"] <= pd.Timestamp(end_date))
+                    ]
+
+                if data.empty:
+                    self.stats.add_error(
+                        symbol, "No data in date range", "no_data_range"
+                    )
                     return False
 
                 # Upload to BigQuery

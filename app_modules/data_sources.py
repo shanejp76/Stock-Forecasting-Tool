@@ -142,7 +142,7 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
     Returns pandas DataFrame with OHLCV data.
     """
     try:
-        data, meta_data = _ts_av.get_daily_adjusted(symbol=ticker, outputsize="full")
+        data, meta_data = _ts_av.get_daily(symbol=ticker, outputsize="full")
 
         if data is not None and not data.empty:
             # Rename columns to snake_case format for internal processing
@@ -151,10 +151,7 @@ def load_alpha_vantage_data(_ts_av: TimeSeries, ticker: str) -> pd.DataFrame:
                 "high",
                 "low",
                 "close",
-                "adjusted_close",
                 "volume",
-                "dividend",
-                "split",
             ]
             # Convert index to datetime if it's not already
             data.index = pd.to_datetime(data.index)

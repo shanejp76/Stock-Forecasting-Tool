@@ -55,9 +55,21 @@ def test_bigquery_ingestion():
 
     try:
         # Fetch data from Alpha Vantage
-        data, meta_data = ts_av.get_daily_adjusted(
-            symbol=test_symbol, outputsize="compact"
-        )
+        data, meta_data = ts_av.get_daily(symbol=test_symbol, outputsize="compact")
+
+        # Rename columns to snake_case format for BigQuery compatibility
+        data.columns = [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ]
+
+        # Convert index to datetime and reset for BigQuery
+        data.index = pd.to_datetime(data.index)
+        data = data.reset_index()
+        data = data.rename(columns={"index": "date"})
 
         # Get the most recent 10 days for testing
         data = data.head(10)

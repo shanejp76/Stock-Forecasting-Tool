@@ -180,10 +180,7 @@ class BigQueryClient:
                 high,
                 low,
                 close,
-                adjusted_close,
-                volume,
-                dividend,
-                split
+                volume
             FROM `{PROJECT_ID}.{DATASET_ID}.{RAW_TABLE_ID}`
             WHERE symbol = @symbol
             """
@@ -200,7 +197,7 @@ class BigQueryClient:
             query_parameters = [
                 bigquery.ScalarQueryParameter("symbol", "STRING", symbol),
             ]
-            
+
             if start_date:
                 query_parameters.append(
                     bigquery.ScalarQueryParameter("start_date", "DATE", start_date)
@@ -209,7 +206,7 @@ class BigQueryClient:
                 query_parameters.append(
                     bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
                 )
-                
+
             job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
 
             # Execute query
@@ -291,3 +288,26 @@ class BigQueryClient:
 def get_bigquery_client() -> BigQueryClient:
     """Get BigQuery client instance"""
     return BigQueryClient()
+
+
+# Convenience function for bulk loading operations
+def upload_to_bigquery(
+    data: pd.DataFrame, symbol: str, source: str = "alpha_vantage"
+) -> bool:
+    """
+    Upload stock data to BigQuery using the BigQuery client.
+
+    Args:
+        data: DataFrame with stock data
+        symbol: Stock symbol
+        source: Data source identifier
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        client = get_bigquery_client()
+        return client.ingest_stock_data(data, symbol, source)
+    except Exception as e:
+        logger.error(f"Failed to upload data for {symbol}: {e}")
+        return False

@@ -198,6 +198,7 @@ This document outlines the transformation of the existing Streamlit-based stock 
    - DONE: Configured service account and authentication  
    - DONE: Designed normalized schema for OHLC (Open, High, Low, Close) data, technical indicators, and metadata
    - **TODO: OPTIMIZE DATA STORAGE** - Switch from OHLC to Close-only data model for swing trading. We only need Close prices for forecasting, not Open/High/Low. This would reduce BigQuery storage costs by ~75% and improve query performance. Update schema to store only: date, symbol, close, volume.
+   - **TODO: RESOLVE PRICE DISCREPANCIES** (September 6, 2025) - Address remaining price discrepancies between Alpha Vantage and BigQuery data sources. While the app is functioning correctly with unadjusted data, there are still minor inconsistencies that should be investigated and resolved after more critical development phases are completed. This is a lower priority data quality issue that can be addressed in future iterations.
    - DONE: Enhanced bulk loading script with progress tracking, checkpointing, and premium rate limiting
    - DONE: Integrated symbol universe retrieval from Alpha Vantage LISTING_STATUS endpoint
    - DONE: Implemented enterprise-grade data ingestion pipeline
