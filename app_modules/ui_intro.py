@@ -135,8 +135,6 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             price_col = "Close"
         elif "close" in data.columns:
             price_col = "close"
-        elif "adjusted_close" in data.columns:
-            price_col = "adjusted_close"
         else:
             price_col = "close"  # Default fallback to snake_case
 

@@ -35,14 +35,14 @@
 
 **Internal Data (ALL code, processing, analysis):**
 - Use **snake_case** for all column names in DataFrames, variables, and data structures
-- Examples: `date`, `close`, `high`, `low`, `volume`, `adjusted_close`
+- Examples: `date`, `close`, `high`, `low`, `volume`
 - Database columns (BigQuery) use snake_case format
 - All modeling and analysis code should use snake_case
 
 **UI Display DataFrames and Elements:**
 - Convert to **Title Case** for DataFrames that appear directly in the UI (st.dataframe, st.table)
 - Convert to **Title Case** for user-facing chart elements (axes, legends, labels)
-- Examples: `Date`, `Close`, `High`, `Low`, `Volume`, `Adjusted Close` 
+- Examples: `Date`, `Close`, `High`, `Low`, `Volume`
 - Use `prepare_data_for_display()` function in `chart_layout.py` for conversion
 - Apply Title Case conversion only at the final display step, not during processing
 
@@ -54,9 +54,9 @@
 - Data pipeline maintains snake_case throughout processing chain
 
 **Price Column Priority for Modeling:**
-- Prioritize unadjusted `close` over `adjusted_close` for swing trading analysis
-- Use `close` column for all modeling and forecasting
-- Only use `adjusted_close` if `close` is unavailable
+- Use `close` column for all modeling and forecasting (unadjusted prices)
+- Application expects only basic OHLCV columns (no adjusted_close, dividend, or split)
+- Swing trading analysis focuses on raw price movements without split/dividend adjustments
 
 ### Code Organization Principles
 - Maintain separation between data logic (snake_case) and presentation (Title Case)

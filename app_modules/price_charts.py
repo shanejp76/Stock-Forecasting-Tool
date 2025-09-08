@@ -253,8 +253,6 @@ def add_price_trace(fig: go.Figure, data: pd.DataFrame) -> None:
     # Determine price column - using snake_case internally
     if "close" in data.columns:
         price_col = "close"
-    elif "adjusted_close" in data.columns:
-        price_col = "adjusted_close"
     else:
         price_col = "close"  # Default fallback
 

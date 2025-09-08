@@ -88,14 +88,12 @@ def clean_stock_data(data: pd.DataFrame) -> pd.DataFrame:
     for col in cleaned_data.columns:
         if col.lower() in ["open", "high", "low", "close", "volume"]:
             column_mapping[col] = col.lower()
-        elif col.lower() in ["adjusted close", "adj close"]:
-            column_mapping[col] = "adjusted_close"
 
     if column_mapping:
         cleaned_data = cleaned_data.rename(columns=column_mapping)
 
-    # Convert numeric columns to proper types
-    numeric_columns = ["open", "high", "low", "close", "adjusted_close", "volume"]
+    # Convert numeric columns to proper types (OHLCV only)
+    numeric_columns = ["open", "high", "low", "close", "volume"]
     for col in numeric_columns:
         if col in cleaned_data.columns:
             cleaned_data[col] = pd.to_numeric(cleaned_data[col], errors="coerce")

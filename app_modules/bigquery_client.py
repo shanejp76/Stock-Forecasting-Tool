@@ -91,26 +91,20 @@ class BigQueryClient:
                 data_copy["date"] = pd.to_datetime(data_copy.index).date
                 data_copy.reset_index(drop=True, inplace=True)
 
-            # Map column names to BigQuery schema
+            # Map column names to BigQuery schema (OHLCV only)
             column_mapping = {
-                # Alpha Vantage daily_adjusted column names
+                # Alpha Vantage daily (unadjusted) column names
                 "1. open": "open",
                 "2. high": "high",
                 "3. low": "low",
                 "4. close": "close",
-                "5. adjusted close": "adjusted_close",
-                "6. volume": "volume",
-                "7. dividend amount": "dividend",
-                "8. split coefficient": "split",
+                "5. volume": "volume",
                 # Alternative column names (for different endpoints)
                 "Open": "open",
                 "High": "high",
                 "Low": "low",
                 "Close": "close",
-                "Adj Close": "adjusted_close",
                 "Volume": "volume",
-                "Dividends": "dividend",
-                "Stock Splits": "split",
             }
 
             for old_col, new_col in column_mapping.items():
@@ -118,13 +112,12 @@ class BigQueryClient:
                     data_copy[new_col] = data_copy[old_col]
                     data_copy.drop(old_col, axis=1, inplace=True)
 
-            # Fill missing values
+            # Fill missing values for OHLCV columns
             numeric_columns = [
                 "open",
                 "high",
                 "low",
                 "close",
-                "adjusted_close",
                 "volume",
             ]
             for col in numeric_columns:
@@ -132,12 +125,6 @@ class BigQueryClient:
                     data_copy[col] = pd.to_numeric(
                         data_copy[col], errors="coerce"
                     ).fillna(0)
-
-            # Set default values for optional columns
-            if "dividend" not in data_copy.columns:
-                data_copy["dividend"] = 0.0
-            if "split" not in data_copy.columns:
-                data_copy["split"] = 1.0
 
             # Insert data into BigQuery
             table_ref = self.dataset_ref.table(RAW_TABLE_ID)

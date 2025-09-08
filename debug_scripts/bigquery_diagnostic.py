@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 try:
     from app_modules.bigquery_client import BigQueryClient
-    from app_modules.data_handler import load_bigquery_data
+    from app_modules.data_sources import load_bigquery_data
     from google.cloud import bigquery
     from google.cloud.exceptions import NotFound
 except ImportError as e:
@@ -624,30 +624,61 @@ class BigQueryDiagnostic:
                         "SUCCESS", "Column sets match perfectly"
                     )
 
-                # Check data values (most recent close price)
-                if "close" in raw_cols and "close" in app_cols:
-                    raw_close = raw_df["close"].iloc[0]
-                    app_close = app_df["close"].iloc[0]
-                    price_diff = abs(raw_close - app_close)
-                    price_diff_pct = (price_diff / raw_close) * 100
+                # Check data values (compare same date for valid comparison)
+                if (
+                    "close" in raw_cols
+                    and "close" in app_cols
+                    and "date" in raw_cols
+                    and "date" in app_cols
+                ):
+                    # Find the most recent date that exists in both datasets
+                    raw_dates = set(raw_df["date"].astype(str))
+                    app_dates = set(app_df["date"].astype(str))
+                    common_dates = raw_dates.intersection(app_dates)
 
-                    comparison["price_comparison"] = {
-                        "raw_close": float(raw_close),
-                        "app_close": float(app_close),
-                        "difference": float(price_diff),
-                        "difference_percent": float(price_diff_pct),
-                    }
+                    if common_dates:
+                        # Use the most recent common date for comparison
+                        latest_common_date = max(common_dates)
 
-                    if price_diff_pct < 0.1:  # Less than 0.1% difference
-                        self.logger_system.log_finding(
-                            "SUCCESS",
-                            f"Close price values match: {raw_close} ≈ {app_close}",
-                        )
+                        # Get close prices for the same date
+                        raw_close = raw_df[
+                            raw_df["date"].astype(str) == latest_common_date
+                        ]["close"].iloc[0]
+                        app_close = app_df[
+                            app_df["date"].astype(str) == latest_common_date
+                        ]["close"].iloc[0]
+
+                        price_diff = abs(raw_close - app_close)
+                        price_diff_pct = (price_diff / raw_close) * 100
+
+                        comparison["price_comparison"] = {
+                            "comparison_date": latest_common_date,
+                            "raw_close": float(raw_close),
+                            "app_close": float(app_close),
+                            "difference": float(price_diff),
+                            "difference_percent": float(price_diff_pct),
+                        }
+
+                        if price_diff_pct < 0.1:  # Less than 0.1% difference
+                            self.logger_system.log_finding(
+                                "SUCCESS",
+                                f"Close price values match for {latest_common_date}: Raw=${raw_close}, App=${app_close}",
+                            )
+                        else:
+                            self.logger_system.log_finding(
+                                "ERROR",
+                                f"Close price mismatch for {latest_common_date}: Raw=${raw_close}, App=${app_close} ({price_diff_pct:.2f}% difference)",
+                            )
                     else:
                         self.logger_system.log_finding(
-                            "ERROR",
-                            f"Close price mismatch: Raw=${raw_close}, App=${app_close} ({price_diff_pct:.2f}% difference)",
+                            "WARNING",
+                            "No common dates found between raw BigQuery sample and application data for price comparison",
                         )
+                        comparison["price_comparison"] = {
+                            "error": "No common dates for comparison",
+                            "raw_date_range": f"{min(raw_dates)} to {max(raw_dates)}",
+                            "app_date_range": f"{min(app_dates)} to {max(app_dates)}",
+                        }
                         comparison["app_vs_raw_differences"].append(
                             f"Price mismatch: {price_diff_pct:.2f}% difference"
                         )
