@@ -191,7 +191,7 @@ jobs:
         echo "� Cloud Deployment: Configured and Ready"
         echo ""
         echo "📋 Deployment Pipeline:"
-        echo "1. ✅ Google Cloud Project: stock-forecasting-tool-prod"
+        echo "1. ✅ Google Cloud Project: stock-forecasting-tool-2025"
         echo "2. ✅ Service Account: Configured with proper permissions"
         echo "3. ✅ GitHub Secrets: GCP credentials added"
         echo "4. ✅ Deployment Jobs: Enabled for staging and production"

@@ -77,7 +77,7 @@ def investigate_bigquery_structure():
         print(f"\n\n4. DIRECT BIGQUERY QUERY TEST:")
         query = """
         SELECT symbol, date, open, high, low, close, volume
-        FROM `stock-forecasting-tool-prod.stock_data.daily_prices`
+        FROM `stock-forecasting-tool-2025.stock_data.raw_stock_data`
         WHERE symbol = 'SPY'
         ORDER BY date DESC
         LIMIT 5

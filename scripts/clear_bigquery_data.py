@@ -57,7 +57,7 @@ def clear_bigquery_data(confirm: bool = False) -> bool:
 
         # Use the internal client to execute delete query
         delete_query = """
-        DELETE FROM `stock-forecasting-tool-prod.stock_data.daily_prices`
+        DELETE FROM `stock-forecasting-tool-2025.stock_data.raw_stock_data`
         WHERE TRUE
         """
 

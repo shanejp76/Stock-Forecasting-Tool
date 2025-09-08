@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 ALPHA_VANTAGE_API_KEY = os.environ.get("ALPHA_VANTAGE_API_KEY")
 BIGQUERY_PROJECT_ID = os.environ.get("BIGQUERY_PROJECT_ID")
 BIGQUERY_DATASET_ID = os.environ.get("BIGQUERY_DATASET_ID", "stock_data")
-BIGQUERY_TABLE_ID = os.environ.get("BIGQUERY_TABLE_ID", "daily_prices")
+BIGQUERY_TABLE_ID = os.environ.get("BIGQUERY_TABLE_ID", "raw_stock_data")
 MAX_TRADING_DAYS = int(
     os.environ.get("MAX_TRADING_DAYS", "500")
 )  # Exactly 500 trading days default

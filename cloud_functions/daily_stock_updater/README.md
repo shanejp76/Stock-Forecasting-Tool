@@ -19,7 +19,7 @@ Set these in your Cloud Function configuration:
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key
 BIGQUERY_PROJECT_ID=your-gcp-project-id
 BIGQUERY_DATASET_ID=stock_data  # Optional, defaults to 'stock_data'
-BIGQUERY_TABLE_ID=daily_prices  # Optional, defaults to 'daily_prices'
+BIGQUERY_TABLE_ID=raw_stock_data  # Optional, defaults to 'raw_stock_data'
 MAX_TRADING_DAYS=500           # Optional, defaults to 500 trading days
 ```
 
@@ -28,7 +28,7 @@ MAX_TRADING_DAYS=500           # Optional, defaults to 500 trading days
 The function creates a table with this schema:
 
 ```sql
-CREATE TABLE `project.dataset.daily_prices` (
+CREATE TABLE `project.dataset.raw_stock_data` (
   date DATE NOT NULL,
   symbol STRING NOT NULL,
   open FLOAT64 NOT NULL,
