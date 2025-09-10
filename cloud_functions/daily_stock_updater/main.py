@@ -23,6 +23,7 @@ import pandas_market_calendars as mcal
 from google.cloud import bigquery
 import requests
 import functions_framework
+from rate_limiter import AVAPIRateLimiter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,8 +38,38 @@ MAX_TRADING_DAYS = int(
     os.environ.get("MAX_TRADING_DAYS", "500")
 )  # Exactly 500 trading days default
 
-# Default stock symbols to update
-DEFAULT_SYMBOLS = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "SPY", "QQQ", "VTI"]
+# Fallback symbols if BigQuery query fails
+FALLBACK_SYMBOLS = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"]
+
+
+def get_existing_symbols() -> List[str]:
+    """
+    Query BigQuery to get all symbols that currently exist in the dataset.
+
+    Returns:
+        List of symbols that exist in BigQuery, or fallback list if query fails.
+    """
+    try:
+        client = bigquery.Client(project=BIGQUERY_PROJECT_ID)
+
+        query = f"""
+        SELECT DISTINCT symbol 
+        FROM `{BIGQUERY_PROJECT_ID}.{BIGQUERY_DATASET_ID}.{BIGQUERY_TABLE_ID}`
+        ORDER BY symbol
+        """
+
+        query_job = client.query(query)
+        results = query_job.result()
+
+        symbols = [row.symbol for row in results]
+        logger.info(f"Found {len(symbols)} existing symbols in BigQuery: {symbols}")
+        return symbols
+
+    except Exception as e:
+        logger.error(f"Error querying existing symbols from BigQuery: {e}")
+        # Fallback to core symbols if query fails
+        logger.info(f"Falling back to default symbols: {FALLBACK_SYMBOLS}")
+        return FALLBACK_SYMBOLS
 
 
 class TradingDayValidator:
@@ -77,9 +108,13 @@ class TradingDayValidator:
 class AlphaVantageClient:
     """Client for fetching stock data from Alpha Vantage API."""
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, rate_limit: int = 75):
         self.api_key = api_key
         self.base_url = "https://www.alphavantage.co/query"
+        self.rate_limiter = AVAPIRateLimiter(max_calls_per_minute=rate_limit)
+        logger.info(
+            f"Alpha Vantage client initialized with {self.rate_limiter.tier} tier rate limiting"
+        )
 
     def get_daily_data(
         self, symbol: str, outputsize: str = "compact"
@@ -103,6 +138,10 @@ class AlphaVantageClient:
 
         try:
             logger.info(f"Fetching data for {symbol}")
+
+            # Apply rate limiting before API call
+            self.rate_limiter.wait_if_needed()
+
             response = requests.get(self.base_url, params=params, timeout=30)
             response.raise_for_status()
 
@@ -182,7 +221,7 @@ class BigQueryManager:
                 bigquery.SchemaField("low", "FLOAT", mode="REQUIRED"),
                 bigquery.SchemaField("close", "FLOAT", mode="REQUIRED"),
                 bigquery.SchemaField("volume", "INTEGER", mode="REQUIRED"),
-                bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
+                bigquery.SchemaField("ingested_at", "TIMESTAMP", mode="REQUIRED"),
             ]
 
             table = bigquery.Table(self.full_table_id, schema=schema)
@@ -199,7 +238,7 @@ class BigQueryManager:
             return
 
         # Add timestamp for when data was updated
-        df["updated_at"] = pd.Timestamp.utcnow()
+        df["ingested_at"] = pd.Timestamp.utcnow()
 
         # Convert date to proper format
         df["date"] = pd.to_datetime(df["date"]).dt.date
@@ -230,11 +269,11 @@ class BigQueryManager:
                     low = source.low,
                     close = source.close,
                     volume = source.volume,
-                    updated_at = source.updated_at
+                    ingested_at = source.ingested_at
             WHEN NOT MATCHED THEN
-                INSERT (date, symbol, open, high, low, close, volume, updated_at)
+                INSERT (date, symbol, open, high, low, close, volume, ingested_at)
                 VALUES (source.date, source.symbol, source.open, source.high, 
-                       source.low, source.close, source.volume, source.updated_at)
+                       source.low, source.close, source.volume, source.ingested_at)
             """
 
             job = self.client.query(merge_query)
@@ -308,11 +347,20 @@ def daily_stock_update(request):
         if request.get_json():
             request_json = request.get_json()
 
-        symbols = request_json.get("symbols", DEFAULT_SYMBOLS)
+        # Get symbols from BigQuery instead of hardcoded list
+        symbols = get_existing_symbols()
+
+        # Allow override from request if specified
+        if "symbols" in request_json:
+            symbols = request_json["symbols"]
+            logger.info(f"Using request-specified symbols: {symbols}")
+        else:
+            logger.info(f"Using symbols discovered from BigQuery: {symbols}")
+
         force_update = request_json.get("force_update", False)
         outputsize = request_json.get("outputsize", "compact")
 
-        logger.info(f"Starting daily stock update for symbols: {symbols}")
+        logger.info(f"Starting daily stock update for {len(symbols)} symbols")
 
         # Validate environment variables
         if not ALPHA_VANTAGE_API_KEY:

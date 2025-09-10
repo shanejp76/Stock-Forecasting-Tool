@@ -65,9 +65,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
       --uri="$FUNCTION_URL" \
       --http-method=POST \
       --time-zone="America/New_York" \
-      --description="Daily stock data update (weekdays at 10 PM ET)" \
+      --description="Daily stock data update (weekdays at 10 PM ET) - Auto-discovers symbols from BigQuery" \
       --headers="Content-Type=application/json" \
-      --message-body='{"symbols": ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "SPY", "QQQ", "VTI"]}'
+      --message-body='{}'
     
     echo "Scheduler job created successfully!"
     echo "Job will run weekdays at 10 PM ET (after market close)"

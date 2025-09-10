@@ -17,14 +17,17 @@ try {
         conda activate stock-forecasting 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "[SUCCESS] Activated conda environment: stock-forecasting" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "[WARNING] Conda environment 'stock-forecasting' not found" -ForegroundColor Yellow
             Write-Host "[INFO] You may need to create it with: conda create -n stock-forecasting python=3.11" -ForegroundColor Yellow
         }
-    } catch {
+    }
+    catch {
         Write-Host "[WARNING] Failed to activate conda environment" -ForegroundColor Yellow
     }
-} catch {
+}
+catch {
     Write-Host "[INFO] Conda not found - using system Python" -ForegroundColor Yellow
 }
 
@@ -61,9 +64,28 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  python debug_scripts/check_env.py        - Environment verification" -ForegroundColor White
     Write-Host ""
     Write-Host "💡 NOTE: Conda environment not required - current setup is fully functional" -ForegroundColor Yellow
-} else {
+}
+else {
     Write-Host "[WARNING] Some issues detected. Please review the output above." -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "Environment activation complete." -ForegroundColor Cyan
+
+# Load and verify API keys from .env file
+Write-Host ""
+Write-Host "Verifying API keys..." -ForegroundColor Yellow
+if (Test-Path ".env") {
+    $envContent = Get-Content ".env"
+    foreach ($line in $envContent) {
+        if ($line -match "^ALPHA_VANTAGE_API_KEY=(.+)$") {
+            $correctKey = $matches[1]
+            $env:ALPHA_VANTAGE_API_KEY = $correctKey
+            Write-Host "[SUCCESS] Alpha Vantage API key loaded: $($correctKey.Substring(0,8))..." -ForegroundColor Green
+            break
+        }
+    }
+}
+else {
+    Write-Host "[WARNING] .env file not found" -ForegroundColor Yellow
+}

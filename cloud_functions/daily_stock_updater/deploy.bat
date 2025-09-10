@@ -77,9 +77,9 @@ if /i "%CREATE_SCHEDULER%"=="y" (
       --uri="!FUNCTION_URL!" ^
       --http-method=POST ^
       --time-zone="America/New_York" ^
-      --description="Daily stock data update (weekdays at 10 PM ET)" ^
+      --description="Daily stock data update (weekdays at 10 PM ET) - Auto-discovers symbols from BigQuery" ^
       --headers="Content-Type=application/json" ^
-      --message-body="{\"symbols\": [\"AAPL\", \"GOOGL\", \"MSFT\", \"AMZN\", \"TSLA\", \"SPY\", \"QQQ\", \"VTI\"]}"
+      --message-body="{}"
     
     if !errorlevel! equ 0 (
         echo Scheduler job created successfully!
