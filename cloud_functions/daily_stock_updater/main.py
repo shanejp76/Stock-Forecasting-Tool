@@ -240,6 +240,9 @@ class BigQueryManager:
         # Add timestamp for when data was updated
         df["ingested_at"] = pd.Timestamp.utcnow()
 
+        # Add source field - required by BigQuery schema
+        df["source"] = "alpha_vantage"
+
         # Convert date to proper format
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
@@ -269,11 +272,12 @@ class BigQueryManager:
                     low = source.low,
                     close = source.close,
                     volume = source.volume,
-                    ingested_at = source.ingested_at
+                    ingested_at = source.ingested_at,
+                    source = source.source
             WHEN NOT MATCHED THEN
-                INSERT (date, symbol, open, high, low, close, volume, ingested_at)
+                INSERT (date, symbol, open, high, low, close, volume, ingested_at, source)
                 VALUES (source.date, source.symbol, source.open, source.high, 
-                       source.low, source.close, source.volume, source.ingested_at)
+                       source.low, source.close, source.volume, source.ingested_at, source.source)
             """
 
             job = self.client.query(merge_query)
