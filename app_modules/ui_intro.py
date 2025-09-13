@@ -30,6 +30,7 @@ from app_modules.data_handler import (
     calculate_stock_stats,
     determine_periods,
 )
+from app_modules.deployment_config import deployment_config
 
 
 def display_welcome_expander():
@@ -79,11 +80,18 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
                 "Enter Symbol (Ticker List in Appendix)", value="goog"
             ).upper()
         with col2:
-            use_bigquery = st.checkbox(
-                "Use BigQuery",
-                value=True,
-                help="Use BigQuery data warehouse (faster, historical) or Alpha Vantage API (real-time, rate limited)",
-            )
+            # Only show BigQuery option if it's available in this environment
+            if deployment_config.should_show_bigquery_option():
+                use_bigquery = st.checkbox(
+                    "Use BigQuery",
+                    value=True,
+                    help="Use BigQuery data warehouse (faster, historical) or Alpha Vantage API (real-time, rate limited)",
+                )
+            else:
+                use_bigquery = False
+                st.info(
+                    "🌐 Running in deployment mode - using Alpha Vantage API", icon="ℹ️"
+                )
 
         tickers, tickers_data = load_finnhub_tickers(FINNHUB_API_KEY, EXCHANGE_CODE)
 

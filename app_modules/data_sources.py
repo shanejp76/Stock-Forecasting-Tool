@@ -22,6 +22,7 @@ from alpha_vantage.timeseries import TimeSeries
 from datetime import date, timedelta
 from typing import Tuple, List
 from app_modules.bigquery_client import get_bigquery_client
+from app_modules.deployment_config import deployment_config
 
 
 @st.cache_data
@@ -31,9 +32,17 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
     Automatically limits data to exactly 500 most recent trading days to optimize Prophet performance.
     Returns tuple of (data, source) where source indicates data origin.
     """
+    # Check if BigQuery is available in this environment
+    if not deployment_config.bigquery_available:
+        return pd.DataFrame(), "bigquery_unavailable"
+
     try:
         # Initialize BigQuery client
         bq_client = get_bigquery_client()
+
+        # Check if client is available and connected
+        if not bq_client or not bq_client.is_available():
+            return pd.DataFrame(), "bigquery_unavailable"
 
         # Query all available data (no date limit initially)
         data = bq_client.query_stock_data(ticker)
@@ -96,8 +105,17 @@ def load_bigquery_symbols() -> List[str]:
     Get list of available stock symbols from BigQuery.
     Returns list of symbol strings.
     """
+    # Check if BigQuery is available in this environment
+    if not deployment_config.bigquery_available:
+        return []
+
     try:
         bq_client = get_bigquery_client()
+
+        # Check if client is available and connected
+        if not bq_client or not bq_client.is_available():
+            return []
+
         symbols = bq_client.get_available_symbols()
         return sorted(symbols)
     except Exception as e:

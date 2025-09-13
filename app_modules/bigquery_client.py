@@ -18,10 +18,12 @@ Created: 2025-08-26
 import pandas as pd
 from google.cloud import bigquery
 from google.auth import default
+from google.oauth2 import service_account
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 import logging
 import os
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,27 +41,71 @@ class BigQueryClient:
 
     def __init__(self):
         """Initialize BigQuery client with authentication"""
+        self.client = None
+        self.credentials = None
+        self.project = PROJECT_ID
+        self.dataset_ref = None
+        self._connection_available = False
+
         try:
-            self.credentials, self.project = default()
+            # Try service account key from environment variable first (for deployed environments)
+            service_account_key = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+            if service_account_key:
+                # Parse service account key from environment variable
+                credentials_info = json.loads(service_account_key)
+                self.credentials = (
+                    service_account.Credentials.from_service_account_info(
+                        credentials_info
+                    )
+                )
+                self.project = credentials_info.get("project_id", PROJECT_ID)
+                logger.info(
+                    "Using service account credentials from environment variable"
+                )
+            else:
+                # Fallback to default authentication (for local development)
+                self.credentials, self.project = default()
+                logger.info("Using default authentication")
+
             self.client = bigquery.Client(
                 credentials=self.credentials, project=PROJECT_ID
             )
             self.dataset_ref = self.client.dataset(DATASET_ID)
-            logger.info(f"BigQuery client initialized for project: {PROJECT_ID}")
+
+            # Test connection
+            self._connection_available = self.test_connection()
+
+            if self._connection_available:
+                logger.info(
+                    f"BigQuery client initialized successfully for project: {PROJECT_ID}"
+                )
+            else:
+                logger.warning("BigQuery client initialized but connection test failed")
+
         except Exception as e:
-            logger.error(f"Failed to initialize BigQuery client: {e}")
-            raise
+            logger.warning(f"BigQuery client initialization failed: {e}")
+            logger.info("Application will run with Alpha Vantage data source only")
+            self._connection_available = False
+
+    def is_available(self) -> bool:
+        """Check if BigQuery connection is available"""
+        return self._connection_available
 
     def test_connection(self) -> bool:
         """Test BigQuery connection"""
+        if not self.client:
+            return False
+
         try:
-            # Simple query to test connection
-            query = f"SELECT COUNT(*) as count FROM `{PROJECT_ID}.{DATASET_ID}.{RAW_TABLE_ID}`"
+            # Use a more lightweight query for connection testing
+            query = f"SELECT 1 as test_connection LIMIT 1"
             result = self.client.query(query).result()
+            list(result)  # Consume the result
             logger.info("BigQuery connection test successful")
             return True
         except Exception as e:
-            logger.error(f"BigQuery connection test failed: {e}")
+            logger.warning(f"BigQuery connection test failed: {e}")
             return False
 
     def ingest_stock_data(

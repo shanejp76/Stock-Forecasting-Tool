@@ -28,6 +28,13 @@
 - Provide context for domain-specific concepts
 - Explain the "why" behind technical decisions
 
+### UI String Formatting
+- **Dollar sign formatting in f-strings is correct as implemented**
+- Use `\$` (escaped dollar signs) in f-strings for proper display in Streamlit UI
+- Any Python SyntaxWarnings about dollar signs in f-strings should be **IGNORED**
+- The formatting in `forecast_summary.py` and `performance_metrics.py` is intentional and correct
+- Do not modify the dollar sign formatting - it displays properly in the UI
+
 ## Coding Conventions and Style Preferences
 
 ### Column Naming Standards
