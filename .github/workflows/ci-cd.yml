@@ -167,8 +167,10 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Configure Docker for GCR
-      run: gcloud auth configure-docker
+    - name: Configure Docker for GCR and Artifact Registry
+      run: |
+        gcloud auth configure-docker
+        gcloud auth configure-docker gcr.io
 
     - name: Build and push Docker image
       run: |
@@ -176,6 +178,16 @@ jobs:
         echo "Building image: ${IMAGE_TAG}:${{ github.sha }}"
         docker build -f Dockerfile.prod -t "${IMAGE_TAG}:${{ github.sha }}" .
         docker build -f Dockerfile.prod -t "${IMAGE_TAG}:latest" .
+        
+        echo "Checking Docker authentication..."
+        gcloud auth list
+        
+        echo "Verifying service account permissions..."
+        gcloud projects get-iam-policy ${{ secrets.GCP_PROJECT_ID }} \
+          --flatten="bindings[].members" \
+          --filter="bindings.members:*${{ secrets.GCP_PROJECT_ID }}*" \
+          --format="table(bindings.role)" || echo "Could not verify permissions"
+        
         echo "Pushing image: ${IMAGE_TAG}:${{ github.sha }}"
         docker push "${IMAGE_TAG}:${{ github.sha }}"
         docker push "${IMAGE_TAG}:latest"
