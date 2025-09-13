@@ -400,7 +400,7 @@ with st.expander('Click here to expand'):
 # ------------------------------------------------------------------
 st.subheader('**-- Accuracy Metrics --**')
 st.write('Model Accuracy Score:')
-st.subheader(f'{100-(round(scores_df['smape'].iloc[2]*100, 2))}%')
+st.subheader(f'{100-(round(scores_df["smape"].iloc[2]*100, 2))}%')
 
 
 # Metrics notes
