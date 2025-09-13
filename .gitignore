@@ -79,3 +79,7 @@ dmypy.json
 # Google Cloud credentials
 credentials.json
 *.json
+
+# Streamlit secrets (CRITICAL: Never commit these!)
+.streamlit/secrets.toml
+.streamlit/secrets*.toml

@@ -38,28 +38,48 @@ class DeploymentConfig:
     def _check_bigquery_availability(self) -> None:
         """Check if BigQuery authentication is properly configured"""
         try:
-            # Check for service account key in environment
+            # Priority 1: Check Streamlit secrets (most reliable for Streamlit Cloud)
+            try:
+                import streamlit as st
+
+                if hasattr(st, "secrets") and st.secrets.get(
+                    "GOOGLE_APPLICATION_CREDENTIALS_JSON"
+                ):
+                    self.bigquery_available = True
+                    logger.info(
+                        "BigQuery service account credentials found in Streamlit secrets"
+                    )
+                    return
+            except Exception:
+                pass  # Streamlit not available or secrets not accessible
+
+            # Priority 2: Check for service account key in environment
             if os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"):
                 self.bigquery_available = True
-                logger.info("BigQuery service account credentials found")
+                logger.info("BigQuery service account credentials found in environment")
                 return
 
-            # Check for default credentials file
+            # Priority 3: Check for default credentials file
             if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
                 self.bigquery_available = True
                 logger.info("BigQuery credentials file found")
                 return
 
-            # For local development, try default auth
+            # Priority 4: For local development, try default auth with timeout
             if self.environment == "local":
                 try:
                     from google.auth import default
+                    import google.auth.transport.requests
 
-                    default()
+                    # Use short timeout to prevent hanging
+                    request = google.auth.transport.requests.Request(timeout=3)
+                    default(request=request)
                     self.bigquery_available = True
                     logger.info("BigQuery default authentication available")
-                except Exception:
-                    logger.warning("BigQuery default authentication not available")
+                except Exception as e:
+                    logger.warning(
+                        f"BigQuery default authentication not available: {e}"
+                    )
 
         except Exception as e:
             logger.warning(f"BigQuery availability check failed: {e}")

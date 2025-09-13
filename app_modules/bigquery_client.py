@@ -25,6 +25,14 @@ import logging
 import os
 import json
 
+# Import streamlit for secrets access (optional dependency)
+try:
+    import streamlit as st
+
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,11 +56,31 @@ class BigQueryClient:
         self._connection_available = False
 
         try:
-            # Try service account key from environment variable first (for deployed environments)
-            service_account_key = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+            # Priority 1: Try Streamlit secrets (for Streamlit Cloud deployment)
+            service_account_key = None
+
+            if STREAMLIT_AVAILABLE and hasattr(st, "secrets"):
+                try:
+                    service_account_key = st.secrets.get(
+                        "GOOGLE_APPLICATION_CREDENTIALS_JSON", None
+                    )
+                    if service_account_key:
+                        logger.info(
+                            "Using service account credentials from Streamlit secrets"
+                        )
+                except Exception as e:
+                    logger.debug(f"Failed to access Streamlit secrets: {e}")
+
+            # Priority 2: Try environment variable (for other deployed environments)
+            if not service_account_key:
+                service_account_key = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+                if service_account_key:
+                    logger.info(
+                        "Using service account credentials from environment variable"
+                    )
 
             if service_account_key:
-                # Parse service account key from environment variable
+                # Parse service account key from JSON string
                 credentials_info = json.loads(service_account_key)
                 self.credentials = (
                     service_account.Credentials.from_service_account_info(
@@ -60,13 +88,24 @@ class BigQueryClient:
                     )
                 )
                 self.project = credentials_info.get("project_id", PROJECT_ID)
-                logger.info(
-                    "Using service account credentials from environment variable"
-                )
             else:
-                # Fallback to default authentication (for local development)
-                self.credentials, self.project = default()
-                logger.info("Using default authentication")
+                # Priority 3: Fallback to default authentication (for local development only)
+                # Add timeout to prevent hanging on Streamlit Cloud
+                try:
+                    import google.auth.transport.requests
+                    import google.auth._default
+
+                    # Set a short timeout for metadata service
+                    request = google.auth.transport.requests.Request(timeout=5)
+                    self.credentials, self.project = default(request=request)
+                    logger.info("Using default authentication with timeout")
+                except Exception as auth_error:
+                    logger.warning(
+                        f"Default authentication failed (expected on deployed environments): {auth_error}"
+                    )
+                    # Don't raise exception, just mark as unavailable
+                    self._connection_available = False
+                    return
 
             self.client = bigquery.Client(
                 credentials=self.credentials, project=PROJECT_ID
@@ -93,15 +132,24 @@ class BigQueryClient:
         return self._connection_available
 
     def test_connection(self) -> bool:
-        """Test BigQuery connection"""
+        """Test BigQuery connection with timeout handling"""
         if not self.client:
             return False
 
         try:
-            # Use a more lightweight query for connection testing
+            # Use a lightweight query with timeout for connection testing
             query = f"SELECT 1 as test_connection LIMIT 1"
-            result = self.client.query(query).result()
-            list(result)  # Consume the result
+
+            # Configure job with timeout
+            job_config = bigquery.QueryJobConfig()
+            job_config.use_query_cache = True
+            job_config.maximum_bytes_billed = 1024  # Minimal billing
+
+            # Execute query with timeout
+            query_job = self.client.query(query, job_config=job_config, timeout=10)
+            results = query_job.result(timeout=10)  # 10 second timeout
+            list(results)  # Consume the result
+
             logger.info("BigQuery connection test successful")
             return True
         except Exception as e:
