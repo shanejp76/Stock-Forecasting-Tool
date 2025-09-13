@@ -2,6 +2,8 @@
 
 A modern, containerized analytics engineering platform for stock forecasting and swing trading analysis. This application combines machine learning, technical analysis, and business intelligence to provide comprehensive insights for trading decisions.
 
+<!-- CI/CD Status Check - Updated: 2025-09-13 -->
+
 ## 🚀 Quick Start
 
 ### Option 1: Docker (Recommended)
