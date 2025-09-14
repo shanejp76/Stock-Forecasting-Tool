@@ -182,12 +182,6 @@ jobs:
         echo "Checking Docker authentication..."
         gcloud auth list
         
-        echo "Verifying service account permissions..."
-        gcloud projects get-iam-policy ${{ secrets.GCP_PROJECT_ID }} \
-          --flatten="bindings[].members" \
-          --filter="bindings.members:*${{ secrets.GCP_PROJECT_ID }}*" \
-          --format="table(bindings.role)" || echo "Could not verify permissions"
-        
         echo "Pushing image: ${IMAGE_TAG}:${{ github.sha }}"
         docker push "${IMAGE_TAG}:${{ github.sha }}"
         docker push "${IMAGE_TAG}:latest"
