@@ -2,7 +2,7 @@
 
 A modern, containerized analytics engineering platform for stock forecasting and swing trading analysis. This application combines machine learning, technical analysis, and business intelligence to provide comprehensive insights for trading decisions.
 
-<!-- CI/CD Status Check - Updated: 2025-09-13 - Testing Cloud Run deployment permissions -->
+<!-- CI/CD Status Check - Updated: 2025-09-13 - Testing Service Account User permission for Cloud Run -->
 
 ## 🚀 Quick Start
 
