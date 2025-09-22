@@ -17,7 +17,7 @@ Created: 2025-09-21
 
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 import json
 
@@ -157,7 +157,7 @@ class DataValidator:
 
             is_current = latest_date == last_trading_day
             ingestion_age_hours = (
-                (datetime.utcnow() - latest_ingestion).total_seconds() / 3600
+                (datetime.now(timezone.utc) - latest_ingestion).total_seconds() / 3600
                 if latest_ingestion
                 else float("inf")
             )
@@ -207,11 +207,13 @@ class DataValidator:
 
         max_wait_seconds = max_wait_minutes * 60
         check_interval_seconds = check_interval_minutes * 60
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         logger.info(f"Waiting up to {max_wait_minutes} minutes for fresh raw data")
 
-        while (datetime.utcnow() - start_time).total_seconds() < max_wait_seconds:
+        while (
+            datetime.now(timezone.utc) - start_time
+        ).total_seconds() < max_wait_seconds:
             validation_result = self.check_raw_data_freshness()
 
             if validation_result.get("validation_passed", False):
@@ -279,7 +281,7 @@ class ParameterOptimizer:
                 "status": "completed",
                 "symbols_processed": symbols,
                 "symbols_count": len(symbols),
-                "optimization_started": datetime.utcnow().isoformat(),
+                "optimization_started": datetime.now(timezone.utc).isoformat(),
                 "force_reoptimize": force_reoptimize,
                 "note": "Optimization completed successfully - Cloud Function is working!",
             }
@@ -366,7 +368,7 @@ def parameter_optimization(request):
                 "status": "skipped",
                 "reason": "Raw data not current after waiting",
                 "data_validation": data_status,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         # Get symbols for optimization
@@ -381,7 +383,7 @@ def parameter_optimization(request):
             return {
                 "status": "skipped",
                 "reason": "No symbols found",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         # Run parameter optimization
@@ -401,7 +403,7 @@ def parameter_optimization(request):
                     for day in trading_validator.get_current_week_trading_days()
                 ],
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         logger.info(f"Parameter optimization completed: {response['status']}")
@@ -412,7 +414,7 @@ def parameter_optimization(request):
         return {
             "status": "error",
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }, 500
 
 

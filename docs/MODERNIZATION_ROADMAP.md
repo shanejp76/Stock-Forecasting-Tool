@@ -7,18 +7,167 @@ Keep all active work in Phases, all finished work in Completed. No mixing of sta
 
 ## Current Status & Next Recommended Steps
 
-**Last Session Focus**: Phase 1 - Symbol-Specific Model Optimization implementation
-**Current State**: Phase 1 COMPLETED - Full optimization pipeline implemented and tested
-**Major Achievement**: Created complete infrastructure for symbol-specific Prophet parameter optimization with BigQuery storage, lookup services, and UI integration
-**Pipeline Status**: Production-ready optimization system - enables faster, more accurate forecasts using pre-computed optimal parameters
+**Last Session Focus**: Cloud Function deployment and infrastructure testing
+**Current State**: Cloud Function infrastructure COMPLETED - Deployment, timezone handling, BigQuery connectivity all working
+**Major Achievement**: Successfully resolved file naming conflicts, timezone datetime issues, and established production-ready Cloud Function deployment pipeline
+**Current Issues**: 
+1. **Security Risk**: Cloud Function deployed unauthenticated - anyone can trigger expensive operations
+2. **Mock Logic**: Cloud Function uses mock optimization instead of real hyperparameter tuning - needs actual optimization implementation
 
 ### Next Recommended Steps
-- **Immediate**: Resolve Cloud Function deployment file naming conflict and complete deployment
-- **Testing**: Run end-to-end test of weekly parameter optimization workflow
-- **Monitoring**: Set up alerting for parameter optimization success/failure status
-- **Phase 2**: Begin "Performance Optimization & Monitoring" with BigQuery connection pooling and operational dashboards
+- **Security Priority**: Enable Cloud Function authentication to protect against unauthorized access and costs
+- **Immediate Priority**: Implement real optimization logic in Cloud Function using existing hyperparameter tuning codebase  
+- **Testing**: Verify actual parameter optimization writes to BigQuery optimal_parameters table
+- **Integration**: Ensure Cloud Function optimization matches local optimization results
+- **Phase 2**: Begin "Performance Optimization & Monitoring" after real optimization is working
 
 ## Phases
+
+### Phase 1A: Cloud Function Security & Authentication
+**Priority**: HIGH - Security vulnerability with current unauthenticated access
+**Objective**: Enable authentication on parameter optimizer Cloud Function to prevent unauthorized access and protect against cost abuse
+
+**Current Security Risk**: 
+- ❌ Cloud Function deployed with `--allow-unauthenticated` flag
+- ❌ **Anyone with URL can trigger expensive operations** (2GB memory, 1-hour timeout, BigQuery processing)
+- ❌ **Potential cost abuse** from malicious actors discovering public endpoint
+- ❌ **Business data exposure** through function responses (symbol lists, optimization status)
+- ❌ **No access control** for financial data processing function
+
+**Implementation Steps**:
+
+1. **Redeploy with Authentication** (15 minutes):
+   ```bash
+   cd cloud_functions/parameter_optimizer
+   gcloud functions deploy parameter-optimizer \
+     --gen2 \
+     --runtime python311 \
+     --trigger-http \
+     --no-allow-unauthenticated \  # Key change - enable authentication
+     --memory 2Gi \
+     --timeout 3600 \
+     --region us-central1 \
+     --set-env-vars="BIGQUERY_PROJECT_ID=stock-forecasting-tool-2025,BIGQUERY_DATASET_ID=stock_data,RAW_DATA_TABLE_ID=raw_stock_data,OPTIMAL_PARAMS_TABLE_ID=optimal_parameters"
+   ```
+
+2. **Update Testing Method** (10 minutes):
+   - Replace unauthenticated PowerShell testing with authenticated requests
+   - Use `gcloud auth print-identity-token` for local testing
+   - Update testing commands in documentation
+
+3. **Verify Access Control** (5 minutes):
+   - Test that unauthenticated requests are now rejected (401/403 responses)
+   - Verify authenticated requests work correctly
+   - Document authentication requirements
+
+4. **Update Deployment Scripts** (10 minutes):
+   - Modify `deploy.bat` and `deploy.sh` to remove `--allow-unauthenticated`
+   - Add authentication documentation to README.md
+   - Include testing examples with authentication
+
+5. **Future Cloud Scheduler Integration** (for reference):
+   - When implementing weekly automation, use service account authentication
+   - Configure OIDC token-based authentication for scheduler jobs
+
+**Expected Outcomes**:
+- Cloud Function requires authentication for all requests
+- Cost protection against unauthorized usage
+- Security compliance for financial data processing
+- Foundation for proper Cloud Scheduler integration
+
+**Testing Commands (Post-Implementation)**:
+```powershell
+# Get auth token
+$token = gcloud auth print-identity-token
+
+# Test authenticated request
+$headers = @{"Authorization"="Bearer $token"}
+Invoke-WebRequest -Uri "https://parameter-optimizer-cjudw6alcq-uc.a.run.app" -Method POST -Headers $headers -Body '{"force_run": true}' -ContentType "application/json"
+```
+
+### Phase 1B: Real Parameter Optimization Implementation
+**Priority**: CRITICAL - Infrastructure ready, needs actual optimization logic
+**Objective**: Replace mock optimization in Cloud Function with real hyperparameter tuning using existing codebase
+
+**Current Status**: 
+- ✅ Cloud Function deployment infrastructure working (main.py, timezone fixes, BigQuery connectivity)
+- ✅ Mock optimization reporting 46 symbols "processed successfully" 
+- ❌ No actual optimization occurring - trigger_optimization() method contains simulation code only
+- ❌ Zero rows in optimal_parameters table despite "successful" runs
+
+**Implementation Steps**:
+
+1. **Analysis Phase** (0.5-1 hour):
+   - Examine existing optimization logic in `archive/` notebooks (2024.12.18 - Model Eval.ipynb, 2024.12.30 - Winsorizing + Optimization.ipynb)
+   - Identify hyperparameter tuning patterns used in local optimization runs
+   - Map BigQuery schema requirements for optimal_parameters table (changepoint_prior_scale, seasonality_prior_scale, rmse, mae, smape, etc.)
+
+2. **Module Creation** (1-2 hours):
+   - Create `optimization_engine.py` module in `cloud_functions/parameter_optimizer/`
+   - Extract core Prophet optimization logic from archive notebooks
+   - Implement BigQuery data loading for symbol-specific historical data
+   - Add parameter validation and error handling for Cloud Function environment
+
+3. **Core Optimization Logic** (2-3 hours):
+   ```python
+   class CloudParameterOptimizer:
+       def __init__(self, bigquery_client, project_id, dataset_id):
+           # Initialize BigQuery connections using existing patterns
+           
+       def optimize_symbol_parameters(self, symbol: str) -> dict:
+           # Load historical data for symbol from BigQuery raw_stock_data table
+           # Apply your proven hyperparameter tuning methodology:
+           #   - Cross-validation approach from 2024.12.18 notebooks
+           #   - Parameter grid search (changepoint_prior_scale, seasonality_prior_scale)
+           #   - Performance metrics calculation (RMSE, MAE, SMAPE)
+           # Return optimized parameters matching BigQuery schema
+           
+       def batch_optimize_symbols(self, symbols: list) -> list:
+           # Process multiple symbols with error handling and logging
+           # Store results directly to BigQuery optimal_parameters table
+   ```
+
+4. **BigQuery Integration** (1 hour):
+   - Implement direct writes to `stock-forecasting-tool-2025.stock_data.optimal_parameters`
+   - Follow existing schema: symbol, changepoint_prior_scale, seasonality_prior_scale, rmse, mae, smape, optimization_date, data_points_used, cv_folds, created_at, updated_at
+   - Add upsert logic for re-optimization scenarios
+   - Include comprehensive logging for debugging
+
+5. **Replace Mock Implementation** (0.5 hour):
+   - Update `ParameterOptimizer.trigger_optimization()` in main.py
+   - Remove simulation code, import and use CloudParameterOptimizer
+   - Maintain same response format but with actual optimization results
+   - Preserve error handling and logging patterns
+
+6. **Dependencies & Requirements** (0.5 hour):
+   - Add Prophet, scikit-learn, hyperopt to `requirements.txt`
+   - Verify Cloud Function memory (2Gi) and timeout (3600s) are sufficient for optimization workload
+   - Test package compatibility in Cloud Function environment
+
+7. **Testing & Validation** (1 hour):
+   - Deploy updated Cloud Function with real optimization
+   - Test single symbol optimization first (e.g., SPY)
+   - Verify BigQuery writes are successful and data matches expected schema
+   - Run full 46-symbol optimization and confirm population of optimal_parameters table
+   - Compare optimization results with local runs for consistency validation
+
+**Expected Outcomes**:
+- Cloud Function executes actual hyperparameter tuning using proven methodology from archive notebooks
+- BigQuery optimal_parameters table populated with 46 rows of optimized Prophet parameters
+- Optimization results match quality and consistency of local optimization runs
+- Weekly automated parameter optimization becomes fully functional
+
+**Dependencies Required**:
+- Prophet library and dependencies in Cloud Function environment
+- Archive notebook methodology (grid search, cross-validation, performance metrics)
+- BigQuery write permissions and schema compliance
+- Sufficient Cloud Function compute resources (current 2Gi memory, 1 hour timeout should be adequate)
+
+**Risk Mitigation**:
+- Start with single symbol testing before full batch processing
+- Implement comprehensive error handling and logging throughout optimization pipeline
+- Add timeout protection for individual symbol optimization (prevent function timeout)
+- Include fallback mechanisms for optimization failures per symbol
 
 ### Phase 2: Performance Optimization & Monitoring  
 **Priority**: High  
@@ -141,3 +290,11 @@ Keep all active work in Phases, all finished work in Completed. No mixing of sta
 - COMPLETED: **Production Deployment**: Successfully deployed application to Streamlit Cloud with working BigQuery integration
 - COMPLETED: **JSON Formatting Resolution**: Created JSON formatter utility to resolve "Invalid control character" errors in production
 - COMPLETED: **Production Authentication Verification**: BigQuery authentication fully functional in Streamlit Cloud environment
+
+### Cloud Function Infrastructure & Deployment Resolution
+- COMPLETED: **File Naming Conflict Resolution**: Fixed parameter optimizer Cloud Function deployment by renaming optimizer_main.py to main.py as required by Google Cloud Functions
+- COMPLETED: **Timezone Handling Fix**: Resolved "can't subtract offset-naive and offset-aware datetimes" error by updating all datetime operations to use timezone-aware UTC timestamps
+- COMPLETED: **Environment Variable Configuration**: Fixed BigQuery project ID environment variable parsing issues that were causing malformed connection strings
+- COMPLETED: **Production Cloud Function Deployment**: Successfully deployed parameter-optimizer Cloud Function with proper BigQuery connectivity, HTTP triggers, and 2Gi memory/1-hour timeout configuration
+- COMPLETED: **Infrastructure Testing**: Verified Cloud Function can connect to BigQuery, retrieve 46 symbols from raw_stock_data table, and execute trading day validation logic
+- COMPLETED: **Mock Optimization Verification**: Confirmed Cloud Function infrastructure works end-to-end but currently uses simulation code instead of real optimization logic
