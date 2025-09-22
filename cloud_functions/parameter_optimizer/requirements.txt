@@ -1,0 +1,12 @@
+functions-framework==3.*
+google-cloud-bigquery==3.*
+google-cloud-functions==1.*
+pandas==2.*
+pandas-market-calendars==4.*
+numpy==1.*
+prophet==1.*
+hyperopt==0.*
+scikit-learn==1.*
+python-dateutil==2.*
+requests==2.*
+pytz==2023.*

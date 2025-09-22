@@ -31,6 +31,11 @@ from app_modules.data_handler import (
     determine_periods,
 )
 from app_modules.deployment_config import deployment_config
+from app_modules.parameter_lookup import (
+    get_optimal_parameters_for_symbol,
+    display_parameter_source_info,
+    should_use_optimal_parameters,
+)
 
 
 def display_welcome_expander():
@@ -192,34 +197,82 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             help="Select the number of trading days (excluding weekends/holidays) for model training. ~250 trading days = 1 year, ~500 trading days = 2 years. More data may improve accuracy but increase processing time.",
         )
 
-        # Parameter Controls (simplified sliders)
-        trend_flexibility = st.slider(
-            "Trend Flexibility",
-            min_value=1,
-            max_value=10,
-            value=5,  # Maps to 0.1 (the default)
-            help="How quickly the model adapts to trend changes. Lower = more conservative, Higher = more responsive to changes",
+        # Parameter Controls with Optimal Parameter Integration
+        st.write("### 🎯 Model Parameters")
+
+        # Get optimal parameters for the selected stock
+        optimal_params = get_optimal_parameters_for_symbol(selected_stock)
+        display_parameter_source_info(optimal_params)
+
+        # Check if we should use optimized parameters
+        use_optimal, reason = should_use_optimal_parameters(selected_stock)
+
+        # Allow user to override optimal parameters
+        user_override = st.checkbox(
+            "🎛️ Customize Parameters",
+            value=not use_optimal,  # Default to custom if no optimization
+            help="Check this to manually adjust parameters instead of using optimal values",
         )
 
-        seasonality_strength = st.slider(
-            "Seasonality Strength",
-            min_value=1,
-            max_value=10,
-            value=5,  # Maps to 1.0 (the default)
-            help="How much seasonal variation the model captures. Lower = smoother patterns, Higher = more pronounced seasonal effects",
-        )
+        if user_override or not use_optimal:
+            # Show simplified sliders (existing UI)
+            trend_flexibility = st.slider(
+                "Trend Flexibility",
+                min_value=1,
+                max_value=10,
+                value=5,  # Maps to 0.1 (the default)
+                help="How quickly the model adapts to trend changes. Lower = more conservative, Higher = more responsive to changes",
+            )
 
-        # Convert simple 1-10 scale to log scale parameters
-        # Changepoint: 1->0.001, 5->0.1, 10->0.5 (logarithmic mapping)
-        changepoint_prior = np.exp(
-            np.log(0.001) + (trend_flexibility - 1) * (np.log(0.5) - np.log(0.001)) / 9
-        )
+            seasonality_strength = st.slider(
+                "Seasonality Strength",
+                min_value=1,
+                max_value=10,
+                value=5,  # Maps to 1.0 (the default)
+                help="How much seasonal variation the model captures. Lower = smoother patterns, Higher = more pronounced seasonal effects",
+            )
 
-        # Seasonality: 1->0.01, 5->1.0, 10->10.0 (logarithmic mapping)
-        seasonality_prior = np.exp(
-            np.log(0.01)
-            + (seasonality_strength - 1) * (np.log(10.0) - np.log(0.01)) / 9
-        )
+            # Convert simple 1-10 scale to log scale parameters
+            # Changepoint: 1->0.001, 5->0.1, 10->0.5 (logarithmic mapping)
+            changepoint_prior = np.exp(
+                np.log(0.001)
+                + (trend_flexibility - 1) * (np.log(0.5) - np.log(0.001)) / 9
+            )
+
+            # Seasonality: 1->0.01, 5->1.0, 10->10.0 (logarithmic mapping)
+            seasonality_prior = np.exp(
+                np.log(0.01)
+                + (seasonality_strength - 1) * (np.log(10.0) - np.log(0.01)) / 9
+            )
+
+            if use_optimal:
+                st.warning(
+                    "⚠️ You've chosen to customize parameters instead of using optimal values. This may reduce forecasting accuracy."
+                )
+
+        else:
+            # Use optimal parameters
+            changepoint_prior = optimal_params["changepoint_prior_scale"]
+            seasonality_prior = optimal_params["seasonality_prior_scale"]
+
+            # Show current optimal values
+            st.success("✅ Using optimal parameters for best forecasting accuracy!")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Changepoint Prior Scale", f"{changepoint_prior:.4f}")
+            with col2:
+                st.metric("Seasonality Prior Scale", f"{seasonality_prior:.3f}")
+
+            # Show performance if available
+            if optimal_params.get("rmse") is not None:
+                st.write(
+                    f"**Expected Performance:** RMSE = {optimal_params['rmse']:.3f}"
+                )
+
+        # Convert to the parameter names expected by the rest of the code
+        trend_flexibility = None  # Not needed when using optimal params
+        seasonality_strength = None  # Not needed when using optimal params
 
         # Determine training and forecast periods
         period_unit, forecast_period, train_period = determine_periods(
