@@ -94,9 +94,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
                 )
             else:
                 use_bigquery = False
-                st.info(
-                    "🌐 Running in deployment mode - using Alpha Vantage API", icon="ℹ️"
-                )
+                st.info("Running in deployment mode - using Alpha Vantage API")
 
         tickers, tickers_data = load_finnhub_tickers(FINNHUB_API_KEY, EXCHANGE_CODE)
 
@@ -198,7 +196,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
         )
 
         # Parameter Controls with Optimal Parameter Integration
-        st.write("### 🎯 Model Parameters")
+        st.write("### Model Parameters")
 
         # Get optimal parameters for the selected stock
         optimal_params = get_optimal_parameters_for_symbol(selected_stock)
@@ -209,7 +207,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
 
         # Allow user to override optimal parameters
         user_override = st.checkbox(
-            "🎛️ Customize Parameters",
+            "Customize Parameters",
             value=not use_optimal,  # Default to custom if no optimization
             help="Check this to manually adjust parameters instead of using optimal values",
         )
@@ -247,7 +245,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
 
             if use_optimal:
                 st.warning(
-                    "⚠️ You've chosen to customize parameters instead of using optimal values. This may reduce forecasting accuracy."
+                    "WARNING: You've chosen to customize parameters instead of using optimal values. This may reduce forecasting accuracy."
                 )
 
         else:
@@ -256,7 +254,7 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             seasonality_prior = optimal_params["seasonality_prior_scale"]
 
             # Show current optimal values
-            st.success("✅ Using optimal parameters for best forecasting accuracy!")
+            st.success("DONE: Using optimal parameters for best forecasting accuracy!")
 
             col1, col2 = st.columns(2)
             with col1:

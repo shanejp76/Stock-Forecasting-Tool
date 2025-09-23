@@ -230,10 +230,10 @@ def display_parameter_source_info(params: Dict):
     source = params.get("source", "unknown")
 
     if source == "optimized":
-        st.success(f"🎯 Using optimized parameters for {symbol}")
+        st.success(f"DONE: Using optimized parameters for {symbol}")
 
         # Show optimization details
-        with st.expander("📊 Optimization Details", expanded=False):
+        with st.expander("Optimization Details", expanded=False):
             col1, col2, col3 = st.columns(3)
 
             with col1:
@@ -256,22 +256,22 @@ def display_parameter_source_info(params: Dict):
 
     elif source == "default_no_optimization":
         st.info(
-            f"📝 Using default parameters for {symbol} (no optimization data available)"
+            f"Using default parameters for {symbol} (no optimization data available)"
         )
-        st.write(
-            "💡 **Tip:** Run the optimization script to improve forecasting accuracy!"
-        )
+        st.write("TIP: Run the optimization script to improve forecasting accuracy!")
 
     elif source == "default_fallback":
         st.info(
-            f"📝 Using default parameters for {symbol} (optimization service unavailable)"
+            f"Using default parameters for {symbol} (optimization service unavailable)"
         )
 
     elif source == "default_error":
-        st.warning(f"⚠️ Using default parameters for {symbol} due to lookup error")
+        st.warning(
+            f"WARNING: Using default parameters for {symbol} due to lookup error"
+        )
 
     else:
-        st.info(f"📝 Using default parameters for {symbol}")
+        st.info(f"Using default parameters for {symbol}")
 
 
 def update_ui_sliders_with_optimal_parameters(
@@ -331,7 +331,7 @@ def update_ui_sliders_with_optimal_parameters(
                 or seasonality_prior_scale != default_seasonality
             ):
                 st.warning(
-                    "⚠️ You've modified the optimal parameters. This may reduce forecasting accuracy."
+                    "WARNING: You've modified the optimal parameters. This may reduce forecasting accuracy."
                 )
 
     else:
@@ -345,7 +345,7 @@ def update_ui_sliders_with_optimal_parameters(
 
         # Option to override
         if st.checkbox(
-            "🎛️ Override optimal parameters",
+            "Override optimal parameters",
             help="Check this to manually adjust the optimal parameters",
         ):
             return update_ui_sliders_with_optimal_parameters(symbol, user_override=True)
@@ -390,7 +390,7 @@ def display_optimization_status():
     status = get_optimization_status_summary()
 
     if status.get("summary_available", False):
-        st.subheader("🎯 Optimization Status")
+        st.subheader("Optimization Status")
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -402,21 +402,21 @@ def display_optimization_status():
         with col4:
             st.metric("Best Symbol", status["best_symbol"])
 
-        if st.button("📊 Show Full Optimization Report"):
+        if st.button("Show Full Optimization Report"):
             service = get_lookup_service()
             summary_df = service.get_optimization_summary()
             if summary_df is not None and not summary_df.empty:
                 st.dataframe(summary_df)
 
     elif status["total_optimized"] > 0:
-        st.info(f"🎯 {status['total_optimized']} symbols have optimal parameters")
+        st.info(f"DONE: {status['total_optimized']} symbols have optimal parameters")
 
     else:
         st.warning(
-            "⚠️ No optimized parameters available. Run optimization script to improve accuracy!"
+            "WARNING: No optimized parameters available. Run optimization script to improve accuracy!"
         )
 
-        if st.button("🚀 How to run optimization"):
+        if st.button("How to run optimization"):
             st.code(
                 """
 # Optimize all symbols (may take several hours)
