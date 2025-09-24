@@ -14,13 +14,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with pinned pip version
+RUN pip install --no-cache-dir pip==23.2.1 && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .

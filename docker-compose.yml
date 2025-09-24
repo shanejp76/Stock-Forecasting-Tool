@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Uses requirements.txt with pinned versions for consistent builds
     ports:
       - "8501:8501"
     environment:
