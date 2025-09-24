@@ -7,6 +7,7 @@ This Cloud Function performs weekly parameter optimization for Prophet models af
 - **Smart Scheduling**: Only runs on the last trading day of the week (typically Friday, but handles holidays)
 - **Data Validation**: Ensures raw data is current before starting optimization
 - **Dependency Management**: Waits for raw data upsert to complete before optimization
+- **Security**: Requires authentication to prevent unauthorized access and cost abuse
 - **Comprehensive Logging**: Detailed logging for monitoring and debugging
 - **Flexible Triggers**: Can be triggered manually or automatically via Cloud Scheduler
 
@@ -54,15 +55,46 @@ The deployment script automatically creates a Cloud Scheduler job:
 
 ## Manual Testing
 
-Test the function directly:
+**IMPORTANT: Authentication Required**
+
+Since September 2025, this Cloud Function requires authentication for security. All manual testing must include proper authentication tokens.
+
+### Get Authentication Token
 
 ```bash
+# Get your identity token for authentication
+gcloud auth print-identity-token
+```
+
+### Test the Function
+
+**Linux/Mac:**
+```bash
 curl -X POST "https://REGION-PROJECT.cloudfunctions.net/parameter-optimizer" \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -d '{
     "force_run": true,
     "symbols": ["AAPL", "GOOGL"]
   }'
+```
+
+**Windows PowerShell:**
+```powershell
+$token = gcloud auth print-identity-token
+$headers = @{"Authorization"="Bearer $token"}
+Invoke-WebRequest -Uri "https://REGION-PROJECT.cloudfunctions.net/parameter-optimizer" `
+  -Method POST -Headers $headers -ContentType "application/json" `
+  -Body '{"force_run": true, "symbols": ["AAPL", "GOOGL"]}'
+```
+
+### Unauthenticated Requests Will Fail
+
+```bash
+# This will return 401 Unauthorized or 403 Forbidden
+curl -X POST "https://REGION-PROJECT.cloudfunctions.net/parameter-optimizer" \
+  -H "Content-Type: application/json" \
+  -d '{"force_run": true}'
 ```
 
 ## Request Parameters
@@ -161,6 +193,31 @@ The optimized parameters are automatically used by your Streamlit application th
 2. **BigQuery permissions**: Ensure Cloud Function service account has BigQuery Editor role
 3. **Timeout errors**: Increase function timeout or reduce symbols per batch
 4. **Import errors**: Verify all dependencies are in `requirements.txt`
+
+### Authentication Issues
+
+**401 Unauthorized or 403 Forbidden Errors:**
+```bash
+# Verify you're authenticated with gcloud
+gcloud auth list
+
+# Re-authenticate if necessary
+gcloud auth login
+
+# Test token generation
+gcloud auth print-identity-token
+```
+
+**Token Expired:**
+```bash
+# Refresh your authentication
+gcloud auth application-default login
+```
+
+**Service Account Issues (for Cloud Scheduler):**
+- Cloud Scheduler automatically uses service account authentication
+- Ensure the Cloud Scheduler service account has Cloud Functions Invoker role
+- Check IAM permissions: `gcloud projects get-iam-policy PROJECT_ID`
 
 ### Debug Mode
 

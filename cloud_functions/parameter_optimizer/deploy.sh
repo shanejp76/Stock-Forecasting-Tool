@@ -68,7 +68,7 @@ gcloud functions deploy $FUNCTION_NAME \
   --memory=$MEMORY \
   --timeout=$TIMEOUT \
   --set-env-vars=BIGQUERY_PROJECT_ID=$PROJECT_ID,BIGQUERY_DATASET_ID=$DATASET_ID,RAW_DATA_TABLE_ID=$RAW_DATA_TABLE,OPTIMAL_PARAMS_TABLE_ID=$OPTIMAL_PARAMS_TABLE \
-  --allow-unauthenticated
+  --no-allow-unauthenticated
 
 if [ $? -ne 0 ]; then
     echo "Function deployment failed!"
@@ -127,8 +127,11 @@ echo "- Memory: $MEMORY"
 echo "- Timeout: ${TIMEOUT}s"
 echo
 echo "Next steps:"
-echo "1. Test the function manually:"
-echo "   curl -X POST \"$FUNCTION_URL\" -H \"Content-Type: application/json\" -d '{\"force_run\": true, \"symbols\": [\"AAPL\"]}'"
+echo "1. Test the function manually (requires authentication):"
+echo "   curl -X POST \"$FUNCTION_URL\" \\"
+echo "     -H \"Authorization: Bearer \$(gcloud auth print-identity-token)\" \\"
+echo "     -H \"Content-Type: application/json\" \\"
+echo "     -d '{\"force_run\": true}'"
 echo
 echo "2. Monitor logs:"
 echo "   gcloud functions logs read $FUNCTION_NAME --region=$REGION"
