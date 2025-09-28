@@ -175,14 +175,6 @@ def load_stock_data_hybrid(
         # Fall back to Alpha Vantage if BigQuery fails
         st.warning(f"Falling back to Alpha Vantage for {ticker}. Reason: {source}")
 
-        # Add detailed debugging information
-        st.info(f"Debug - BigQuery fallback details for {ticker}: {source}")
-
-        # Show deployment config status for additional context
-        st.info(
-            f"Debug - BigQuery available in deployment config: {deployment_config.bigquery_available}"
-        )
-
     # Load from Alpha Vantage
     if _ts_av is not None:
         data = load_alpha_vantage_data(_ts_av, ticker)
