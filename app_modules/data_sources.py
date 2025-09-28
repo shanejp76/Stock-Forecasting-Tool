@@ -34,15 +34,18 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
     """
     # Check if BigQuery is available in this environment
     if not deployment_config.bigquery_available:
-        return pd.DataFrame(), "bigquery_unavailable"
+        return pd.DataFrame(), "BigQuery disabled in deployment config"
 
     try:
         # Initialize BigQuery client
         bq_client = get_bigquery_client()
 
         # Check if client is available and connected
-        if not bq_client or not bq_client.is_available():
-            return pd.DataFrame(), "bigquery_unavailable"
+        if not bq_client:
+            return pd.DataFrame(), "BigQuery client is None"
+
+        if not bq_client.is_available():
+            return pd.DataFrame(), "BigQuery client not available/connected"
 
         # Query all available data (no date limit initially)
         data = bq_client.query_stock_data(ticker)
@@ -66,7 +69,7 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
             # Don't set it back as index since charts need it as a column
             return data, "BigQuery"
         else:
-            return pd.DataFrame(), "BigQuery (no data)"
+            return pd.DataFrame(), f"BigQuery returned no data for {ticker}"
 
     except Exception as e:
         st.warning(f"BigQuery load failed for {ticker}: {str(e)}")
@@ -88,7 +91,15 @@ def load_stock_data_hybrid(
             return data, source
 
         # Fall back to Alpha Vantage if BigQuery fails
-        st.warning(f"Falling back to Alpha Vantage for {ticker}")
+        st.warning(f"Falling back to Alpha Vantage for {ticker}. Reason: {source}")
+
+        # Add detailed debugging information
+        st.info(f"Debug - BigQuery fallback details for {ticker}: {source}")
+
+        # Show deployment config status for additional context
+        st.info(
+            f"Debug - BigQuery available in deployment config: {deployment_config.bigquery_available}"
+        )
 
     # Load from Alpha Vantage
     if _ts_av is not None:
