@@ -126,27 +126,30 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
         if not bq_client.is_available():
             # Get enhanced diagnostic information
             detailed_status = bq_client.get_detailed_status()
-            
+
             # Log detailed diagnostics to console (visible in Streamlit Cloud logs)
             print(f"BIGQUERY_DIAGNOSTIC: {json.dumps(detailed_status, indent=2)}")
-            
+
             # Get specific error information for user display
             error_summary = "BigQuery client not available/connected"
-            if detailed_status.get('connection_error_details'):
-                error_details = detailed_status['connection_error_details']
+            if detailed_status.get("connection_error_details"):
+                error_details = detailed_status["connection_error_details"]
                 error_summary = f"BigQuery connection failed at {error_details.get('auth_step', 'unknown step')}: {error_details.get('error', 'unknown error')[:100]}"
-            
+
             # Include test results summary
-            test_results = detailed_status.get('last_test_results', {})
-            failed_steps = [step for step, result in test_results.items() 
-                          if step.startswith('step_') and not result]
-            
+            test_results = detailed_status.get("last_test_results", {})
+            failed_steps = [
+                step
+                for step, result in test_results.items()
+                if step.startswith("step_") and not result
+            ]
+
             if failed_steps:
                 error_summary += f" (Failed: {', '.join(failed_steps)})"
-            
+
             return (
                 pd.DataFrame(),
-                error_summary
+                error_summary,
             )  # Query all available data (no date limit initially)
         data = bq_client.query_stock_data(ticker)
 
@@ -219,7 +222,7 @@ def load_bigquery_symbols() -> List[str]:
         if not bq_client:
             print("BIGQUERY_SYMBOLS_DEBUG: BigQuery client is None")
             return []
-            
+
         if not bq_client.is_available():
             detailed_status = bq_client.get_detailed_status()
             print(f"BIGQUERY_SYMBOLS_DEBUG: {json.dumps(detailed_status, indent=2)}")
