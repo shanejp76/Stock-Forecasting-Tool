@@ -70,7 +70,7 @@ gcloud functions deploy %FUNCTION_NAME% ^
   --memory=%MEMORY% ^
   --timeout=%TIMEOUT% ^
   --set-env-vars=BIGQUERY_PROJECT_ID=%PROJECT_ID%,BIGQUERY_DATASET_ID=%DATASET_ID%,RAW_DATA_TABLE_ID=%RAW_DATA_TABLE%,OPTIMAL_PARAMS_TABLE_ID=%OPTIMAL_PARAMS_TABLE% ^
-  --allow-unauthenticated
+  --no-allow-unauthenticated
 
 if %errorlevel% neq 0 (
     echo Function deployment failed!
@@ -173,8 +173,14 @@ echo - Memory: %MEMORY%
 echo - Timeout: %TIMEOUT%s
 echo.
 echo Next steps:
-echo 1. Test the function manually:
-echo    curl -X POST "%FUNCTION_URL%" -H "Content-Type: application/json" -d "{\"force_run\": true, \"symbols\": [\"AAPL\"]}"
+echo 1. Test the function manually (requires authentication):
+echo    For Windows PowerShell:
+echo      $token = gcloud auth print-identity-token
+echo      $headers = @{"Authorization"="Bearer $token"}
+echo      Invoke-WebRequest -Uri "%FUNCTION_URL%" -Method POST -Headers $headers -Body '{"force_run": true}' -ContentType "application/json"
+echo.
+echo    For Command Line:
+echo      curl -X POST "%FUNCTION_URL%" -H "Authorization: Bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d "{\"force_run\": true}"
 echo.
 echo 2. Monitor logs:
 echo    gcloud functions logs read %FUNCTION_NAME% --region=%REGION%
