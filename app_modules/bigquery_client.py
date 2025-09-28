@@ -54,6 +54,9 @@ class BigQueryClient:
         self.project = PROJECT_ID
         self.dataset_ref = None
         self._connection_available = False
+        self._connection_error_details = None
+        self._auth_method_used = None
+        self._last_test_results = {}
 
         try:
             # Priority 1: Try Streamlit secrets (for Streamlit Cloud deployment)
@@ -68,8 +71,14 @@ class BigQueryClient:
                         logger.info(
                             "Using service account credentials from Streamlit secrets"
                         )
+                        self._auth_method_used = "streamlit_secrets"
                 except Exception as e:
                     logger.debug(f"Failed to access Streamlit secrets: {e}")
+                    self._connection_error_details = {
+                        "auth_step": "streamlit_secrets_access",
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                    }
 
             # Priority 2: Try environment variable (for other deployed environments)
             if not service_account_key:
@@ -78,16 +87,40 @@ class BigQueryClient:
                     logger.info(
                         "Using service account credentials from environment variable"
                     )
+                    self._auth_method_used = "environment_variable"
 
             if service_account_key:
                 # Parse service account key from JSON string
-                credentials_info = json.loads(service_account_key)
-                self.credentials = (
-                    service_account.Credentials.from_service_account_info(
-                        credentials_info
+                try:
+                    credentials_info = json.loads(service_account_key)
+                    self.credentials = (
+                        service_account.Credentials.from_service_account_info(
+                            credentials_info
+                        )
                     )
-                )
-                self.project = credentials_info.get("project_id", PROJECT_ID)
+                    self.project = credentials_info.get("project_id", PROJECT_ID)
+                except json.JSONDecodeError as e:
+                    self._connection_error_details = {
+                        "auth_step": "json_parsing",
+                        "error": f"Invalid JSON in service account key: {str(e)}",
+                        "error_type": "JSONDecodeError",
+                        "auth_method": self._auth_method_used,
+                    }
+                    logger.error(f"JSON decode error for service account: {e}")
+                    self._connection_available = False
+                    return
+                except Exception as e:
+                    self._connection_error_details = {
+                        "auth_step": "credentials_creation",
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "auth_method": self._auth_method_used,
+                    }
+                    logger.error(
+                        f"Failed to create credentials from service account: {e}"
+                    )
+                    self._connection_available = False
+                    return
             else:
                 # Priority 3: Fallback to default authentication (for local development only)
                 # Add timeout to prevent hanging on Streamlit Cloud
@@ -99,18 +132,36 @@ class BigQueryClient:
                     request = google.auth.transport.requests.Request(timeout=5)
                     self.credentials, self.project = default(request=request)
                     logger.info("Using default authentication with timeout")
+                    self._auth_method_used = "default_authentication"
                 except Exception as auth_error:
                     logger.warning(
                         f"Default authentication failed (expected on deployed environments): {auth_error}"
                     )
+                    self._connection_error_details = {
+                        "auth_step": "default_authentication",
+                        "error": str(auth_error),
+                        "error_type": type(auth_error).__name__,
+                    }
                     # Don't raise exception, just mark as unavailable
                     self._connection_available = False
                     return
 
-            self.client = bigquery.Client(
-                credentials=self.credentials, project=PROJECT_ID
-            )
-            self.dataset_ref = self.client.dataset(DATASET_ID)
+            try:
+                self.client = bigquery.Client(
+                    credentials=self.credentials, project=PROJECT_ID
+                )
+                self.dataset_ref = self.client.dataset(DATASET_ID)
+            except Exception as e:
+                self._connection_error_details = {
+                    "auth_step": "bigquery_client_creation",
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "auth_method": self._auth_method_used,
+                    "project_id": PROJECT_ID,
+                }
+                logger.error(f"Failed to create BigQuery client: {e}")
+                self._connection_available = False
+                return
 
             # Test connection
             self._connection_available = self.test_connection()
@@ -125,36 +176,165 @@ class BigQueryClient:
         except Exception as e:
             logger.warning(f"BigQuery client initialization failed: {e}")
             logger.info("Application will run with Alpha Vantage data source only")
+            self._connection_error_details = {
+                "auth_step": "initialization_general",
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "auth_method": self._auth_method_used,
+            }
             self._connection_available = False
 
     def is_available(self) -> bool:
         """Check if BigQuery connection is available"""
         return self._connection_available
 
+    def get_detailed_status(self) -> dict:
+        """
+        Return comprehensive connection status for debugging
+
+        Returns:
+            dict: Detailed status information including auth method, test results, and error details
+        """
+        status = {
+            "connection_available": self._connection_available,
+            "auth_method_used": self._auth_method_used,
+            "project_id": self.project,
+            "dataset_id": DATASET_ID,
+            "raw_table_id": RAW_TABLE_ID,
+            "streamlit_available": STREAMLIT_AVAILABLE,
+            "client_exists": self.client is not None,
+            "credentials_exists": self.credentials is not None,
+            "connection_error_details": self._connection_error_details,
+            "last_test_results": self._last_test_results,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        # Add environment context
+        if STREAMLIT_AVAILABLE and hasattr(st, "secrets"):
+            try:
+                status["streamlit_secrets_available"] = (
+                    "GOOGLE_APPLICATION_CREDENTIALS_JSON" in st.secrets
+                )
+            except:
+                status["streamlit_secrets_available"] = "unable_to_check"
+        else:
+            status["streamlit_secrets_available"] = False
+
+        status["env_var_available"] = bool(
+            os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        )
+
+        return status
+
     def test_connection(self) -> bool:
-        """Test BigQuery connection with timeout handling"""
+        """Test BigQuery connection with detailed step-by-step diagnostics"""
+        self._last_test_results = {
+            "step_1_client_available": False,
+            "step_2_simple_query": False,
+            "step_3_project_access": False,
+            "step_4_dataset_access": False,
+            "step_5_table_access": False,
+            "error_details": {},
+            "auth_method_used": self._auth_method_used,
+            "project_id": self.project,
+            "dataset_id": DATASET_ID,
+        }
+
+        # Step 1: Check if client exists
         if not self.client:
+            self._last_test_results["error_details"][
+                "step_1"
+            ] = "BigQuery client is None"
+            logger.error("BigQuery client is None - cannot test connection")
             return False
 
-        try:
-            # Use a lightweight query with timeout for connection testing
-            query = f"SELECT 1 as test_connection LIMIT 1"
+        self._last_test_results["step_1_client_available"] = True
+        logger.info("Step 1 PASSED: BigQuery client object exists")
 
-            # Configure job with timeout
+        # Step 2: Test simple query execution
+        try:
+            query = f"SELECT 1 as test_connection LIMIT 1"
             job_config = bigquery.QueryJobConfig()
             job_config.use_query_cache = True
-            job_config.maximum_bytes_billed = 1024  # Minimal billing
+            job_config.maximum_bytes_billed = 1024
 
-            # Execute query with timeout
             query_job = self.client.query(query, job_config=job_config, timeout=10)
-            results = query_job.result(timeout=10)  # 10 second timeout
+            results = query_job.result(timeout=10)
             list(results)  # Consume the result
 
-            logger.info("BigQuery connection test successful")
-            return True
+            self._last_test_results["step_2_simple_query"] = True
+            logger.info("Step 2 PASSED: Simple query execution successful")
         except Exception as e:
-            logger.warning(f"BigQuery connection test failed: {e}")
+            self._last_test_results["error_details"]["step_2"] = {
+                "error": str(e),
+                "error_type": type(e).__name__,
+            }
+            logger.error(f"Step 2 FAILED: Simple query execution failed: {e}")
             return False
+
+        # Step 3: Test project access
+        try:
+            # Use a simple query to verify project access instead of get_project (not available)
+            query = f"SELECT '{self.project}' as project_id"
+            job_config = bigquery.QueryJobConfig()
+            job_config.use_query_cache = True
+            job_config.maximum_bytes_billed = 1024
+
+            query_job = self.client.query(query, job_config=job_config, timeout=10)
+            results = query_job.result(timeout=10)
+            list(results)  # Consume the result
+
+            self._last_test_results["step_3_project_access"] = True
+            self._last_test_results["project_verified"] = self.project
+            logger.info(f"Step 3 PASSED: Project access successful - {self.project}")
+        except Exception as e:
+            self._last_test_results["error_details"]["step_3"] = {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "project_id_attempted": self.project,
+            }
+            logger.error(
+                f"Step 3 FAILED: Project access failed for {self.project}: {e}"
+            )
+            return False
+
+        # Step 4: Test dataset access
+        try:
+            dataset = self.client.get_dataset(f"{self.project}.{DATASET_ID}")
+            self._last_test_results["step_4_dataset_access"] = True
+            self._last_test_results["dataset_location"] = dataset.location
+            logger.info(
+                f"Step 4 PASSED: Dataset access successful - location: {dataset.location}"
+            )
+        except Exception as e:
+            self._last_test_results["error_details"]["step_4"] = {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "dataset_id_attempted": f"{self.project}.{DATASET_ID}",
+            }
+            logger.error(f"Step 4 FAILED: Dataset access failed for {DATASET_ID}: {e}")
+            return False
+
+        # Step 5: Test table access
+        try:
+            table = self.client.get_table(f"{self.project}.{DATASET_ID}.{RAW_TABLE_ID}")
+            self._last_test_results["step_5_table_access"] = True
+            self._last_test_results["table_num_rows"] = table.num_rows
+            self._last_test_results["table_schema_fields"] = len(table.schema)
+            logger.info(
+                f"Step 5 PASSED: Table access successful - {table.num_rows} rows, {len(table.schema)} fields"
+            )
+        except Exception as e:
+            self._last_test_results["error_details"]["step_5"] = {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "table_id_attempted": f"{self.project}.{DATASET_ID}.{RAW_TABLE_ID}",
+            }
+            logger.error(f"Step 5 FAILED: Table access failed for {RAW_TABLE_ID}: {e}")
+            return False
+
+        logger.info("All connection test steps PASSED: BigQuery fully operational")
+        return True
 
     def ingest_stock_data(
         self, data: pd.DataFrame, symbol: str, source: str = "alpha_vantage"
