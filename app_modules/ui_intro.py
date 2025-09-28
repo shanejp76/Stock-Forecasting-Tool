@@ -25,10 +25,13 @@ from datetime import date, timedelta
 from app_modules.data_handler import (
     load_finnhub_tickers,
     load_alpha_vantage_data,
-    load_stock_data_hybrid,
     process_stock_data,
     calculate_stock_stats,
     determine_periods,
+)
+from app_modules.data_sources import (
+    load_stock_data_hybrid,
+    get_bigquery_auth_debug_info,
 )
 from app_modules.deployment_config import deployment_config
 from app_modules.parameter_lookup import (
@@ -95,6 +98,14 @@ def display_stock_selection(FINNHUB_API_KEY, EXCHANGE_CODE, ts_av):
             else:
                 use_bigquery = False
                 st.info("Running in deployment mode - using Alpha Vantage API")
+
+        # Add detailed authentication debugging section for BigQuery issues
+        if deployment_config.bigquery_available:
+            with st.expander("Detailed Authentication Debugging", expanded=False):
+                st.text("BigQuery Authentication Status:")
+                auth_debug = get_bigquery_auth_debug_info()
+                formatted_debug = auth_debug.replace(" | ", "\n")
+                st.text(formatted_debug)
 
         tickers, tickers_data = load_finnhub_tickers(FINNHUB_API_KEY, EXCHANGE_CODE)
 

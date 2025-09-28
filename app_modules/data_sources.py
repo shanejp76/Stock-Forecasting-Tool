@@ -21,8 +21,87 @@ import requests
 from alpha_vantage.timeseries import TimeSeries
 from datetime import date, timedelta
 from typing import Tuple, List
+import os
+import json
 from app_modules.bigquery_client import get_bigquery_client
 from app_modules.deployment_config import deployment_config
+
+
+def get_bigquery_auth_debug_info() -> str:
+    """
+    Get detailed authentication debugging information for BigQuery client.
+    Returns string with authentication status details.
+    """
+    debug_parts = []
+
+    # Check Streamlit secrets availability
+    try:
+        if hasattr(st, "secrets"):
+            if "GOOGLE_APPLICATION_CREDENTIALS_JSON" in st.secrets:
+                debug_parts.append(
+                    "FOUND: Streamlit secrets has GOOGLE_APPLICATION_CREDENTIALS_JSON"
+                )
+                # Try to validate JSON structure
+                try:
+                    creds_json = st.secrets["GOOGLE_APPLICATION_CREDENTIALS_JSON"]
+                    if isinstance(creds_json, str):
+                        creds_data = json.loads(creds_json)
+                        project_id = creds_data.get("project_id", "unknown")
+                        client_email = creds_data.get("client_email", "unknown")
+                        debug_parts.append(f"FOUND: Service account: {client_email}")
+                        debug_parts.append(f"FOUND: Project ID: {project_id}")
+                    else:
+                        debug_parts.append("ERROR: Credentials JSON is not a string")
+                except json.JSONDecodeError as e:
+                    debug_parts.append(f"ERROR: Invalid JSON in secrets: {str(e)[:50]}")
+                except Exception as e:
+                    debug_parts.append(f"ERROR: Error parsing secrets: {str(e)[:50]}")
+            else:
+                debug_parts.append(
+                    "MISSING: Streamlit secrets missing GOOGLE_APPLICATION_CREDENTIALS_JSON"
+                )
+        else:
+            debug_parts.append("MISSING: Streamlit secrets not available")
+    except Exception as e:
+        debug_parts.append(f"ERROR: Error checking Streamlit secrets: {str(e)[:50]}")
+
+    # Check environment variable
+    env_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if env_creds:
+        debug_parts.append(
+            "FOUND: Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON found"
+        )
+        try:
+            creds_data = json.loads(env_creds)
+            project_id = creds_data.get("project_id", "unknown")
+            debug_parts.append(f"FOUND: Env project ID: {project_id}")
+        except Exception as e:
+            debug_parts.append(f"ERROR: Error parsing env credentials: {str(e)[:50]}")
+    else:
+        debug_parts.append(
+            "MISSING: Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON not found"
+        )
+
+    # Check file-based credentials
+    gac_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if gac_file:
+        debug_parts.append(f"FOUND: GOOGLE_APPLICATION_CREDENTIALS file: {gac_file}")
+        if os.path.exists(gac_file):
+            debug_parts.append("FOUND: Credentials file exists")
+        else:
+            debug_parts.append("ERROR: Credentials file does not exist")
+    else:
+        debug_parts.append("MISSING: GOOGLE_APPLICATION_CREDENTIALS file path not set")
+
+    # Check if we're in Streamlit Cloud environment
+    if "streamlit.io" in os.getenv("HOSTNAME", ""):
+        debug_parts.append("DETECTED: Running on Streamlit Cloud")
+    elif os.getenv("STREAMLIT_SHARING_MODE"):
+        debug_parts.append("DETECTED: Running in Streamlit sharing mode")
+    else:
+        debug_parts.append("INFO: Not detected as Streamlit Cloud environment")
+
+    return " | ".join(debug_parts)
 
 
 @st.cache_data
@@ -45,9 +124,12 @@ def load_bigquery_data(ticker: str, start_date: date) -> Tuple[pd.DataFrame, str
             return pd.DataFrame(), "BigQuery client is None"
 
         if not bq_client.is_available():
-            return pd.DataFrame(), "BigQuery client not available/connected"
-
-        # Query all available data (no date limit initially)
+            # Add detailed authentication debugging
+            auth_debug_info = get_bigquery_auth_debug_info()
+            return (
+                pd.DataFrame(),
+                f"BigQuery client not available/connected - {auth_debug_info}",
+            )  # Query all available data (no date limit initially)
         data = bq_client.query_stock_data(ticker)
 
         if not data.empty:
